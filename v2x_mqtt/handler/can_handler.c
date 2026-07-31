@@ -64,9 +64,9 @@
 #define CAN_TX_ID                   0x0000u /* TODO(확인 필요) */
 
 #define CANDIDATE_INTRO_MSG_ID          0x4u
-#define CANDIDATE_INTRO_SHIFT_TYPE_MASK 40
-#define CANDIDATE_INTRO_SHIFT_CZ_X      30
-#define CANDIDATE_INTRO_SHIFT_CZ_Y      19
+#define CANDIDATE_INTRO_SHIFT_TYPE_MASK 32
+#define CANDIDATE_INTRO_SHIFT_CZ_X      22
+#define CANDIDATE_INTRO_SHIFT_CZ_Y      11
 #define CANDIDATE_INTRO_MASK_TYPE_MASK  0xFFu
 #define CANDIDATE_INTRO_MASK_CZ_X       0x3FFu  /* 10bit */
 #define CANDIDATE_INTRO_MASK_CZ_Y       0x7FFu   /* 11bit */
