@@ -1,6 +1,9 @@
 #include "ipc_frame.h"
 
+#include <errno.h>
 #include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 static const uint16_t crc16_table[256] = {
     0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
@@ -85,6 +88,97 @@ IpcParseResult ipc_frame_parse(const uint8_t* buf, ssize_t len, IpcFrame* out_fr
     }
 
     return IPC_PARSE_OK;
+}
+
+int ipc_frame_build(
+    uint8_t channel_bitmask,
+    uint8_t tx_only_channel_bitmask,
+    uint16_t canID,
+    const uint8_t* data,
+    size_t data_len,
+    uint8_t* out_buf,
+    size_t out_cap
+)
+{
+    if (!data || !out_buf || data_len == 0) {
+        return -1;
+    }
+
+    size_t payload_size = (size_t)IPC_FRAME_TX_HEADER_SIZE + data_len;
+    size_t packet_size  = IPC_PACKET_PREPARE_SIZE + payload_size;
+    size_t total_size   = packet_size + IPC_PACKET_CRC_SIZE;
+
+    if (payload_size > 0xFFFFu || total_size > out_cap) {
+        return -1;
+    }
+
+    /* SYNC / START1 / START2 */
+    out_buf[0] = IPC_SYNC;
+    out_buf[1] = IPC_START1;
+    out_buf[2] = IPC_START2;
+
+    /* CMD1 / CMD2 (big-endian) */
+    out_buf[3] = (uint8_t)((IPC_FRAME_TX_CMD1 >> 8) & 0xFFu);
+    out_buf[4] = (uint8_t)(IPC_FRAME_TX_CMD1 & 0xFFu);
+    out_buf[5] = (uint8_t)((IPC_FRAME_TX_CMD2 >> 8) & 0xFFu);
+    out_buf[6] = (uint8_t)(IPC_FRAME_TX_CMD2 & 0xFFu);
+
+    /* LENGTH = header(4) + CAN data(8) = 12 (RX와 달리 canID 헤더 포함) */
+    uint16_t length = (uint16_t)payload_size;
+    out_buf[7] = (uint8_t)((length >> 8) & 0xFFu);
+    out_buf[8] = (uint8_t)(length & 0xFFu);
+
+    /* channel_bitmask / tx_only_channel_bitmask / canID (big-endian) */
+    out_buf[IPC_PACKET_PREPARE_SIZE + 0] = channel_bitmask;
+    out_buf[IPC_PACKET_PREPARE_SIZE + 1] = tx_only_channel_bitmask;
+    out_buf[IPC_PACKET_PREPARE_SIZE + 2] = (uint8_t)((canID >> 8) & 0xFFu);
+    out_buf[IPC_PACKET_PREPARE_SIZE + 3] = (uint8_t)(canID & 0xFFu);
+
+    /* CAN data */
+    memcpy(&out_buf[IPC_PACKET_PREPARE_SIZE + IPC_FRAME_TX_HEADER_SIZE], data, data_len);
+
+    /* CRC16: SYNC부터 CRC 필드 직전까지 전체에 대해 계산 (RX 파싱과 동일 알고리즘) */
+    uint16_t crc = ipc_calc_crc16(out_buf, packet_size);
+    out_buf[packet_size]     = (uint8_t)((crc >> 8) & 0xFFu);
+    out_buf[packet_size + 1] = (uint8_t)(crc & 0xFFu);
+
+    return (int)total_size;
+}
+
+int ipc_frame_send(
+    int fd,
+    uint8_t channel_bitmask,
+    uint8_t tx_only_channel_bitmask,
+    uint16_t canID,
+    const uint8_t* data,
+    size_t data_len
+)
+{
+    uint8_t frame_buf[IPC_MAX_PACKET_SIZE];
+    int frame_len = ipc_frame_build(
+        channel_bitmask, tx_only_channel_bitmask, canID,
+        data, data_len,
+        frame_buf, sizeof(frame_buf)
+    );
+    if (frame_len < 0) {
+        return -1;
+    }
+
+    size_t total_size = (size_t)frame_len;
+    while (1) {
+        ssize_t n = write(fd, frame_buf, total_size);
+        if (n == (ssize_t)total_size) {
+            return 0;
+        }
+        if (n < 0 && (errno == 62 /* ETIME on some platforms */ || errno == EAGAIN)) {
+            struct timespec ts = {0, 100 * 1000 * 1000}; /* 100ms */
+            nanosleep(&ts, NULL);
+            continue;
+        }
+        /* 그 외 에러(짧은 write 포함)는 이 단순 char device 프로토콜에서는
+         * 재시도 대상이 아니므로 실패로 처리한다. */
+        return -1;
+    }
 }
 
 const char* ipc_frame_parse_result_str(IpcParseResult result)

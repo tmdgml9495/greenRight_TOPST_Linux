@@ -49,6 +49,52 @@
 #define EGO_MASK_HEADING          0x1FFu    /* 9bit  */
 #define EGO_MASK_TURN_SIGNAL      0x3u      /* 2bit  */
 
+/* ===================== CAN TX (CA72 -> MICOM, via IPC device) =====================
+ * RX와 동일하게 message_id(4bit) + timestamp(12bit) + payload(48bit) = 64bit 구조를 쓴다.
+ * message_id 값은 문서상 "0100", "0101", "0110"으로 표기되어 있는데, 이는 4bit 필드의
+ * 2진수 표기이므로 각각 0x4, 0x5, 0x6 이다 (RX의 ego status가 0x0인 것과 같은 체계). */
+
+/* TODO(확인 필요): 아래 IPC 목적지 파라미터는 vendor IPC ICD 문서 기준으로 재확인해야 한다.
+ *   - channel_bitmask / tx_only_channel_bitmask : ipc_example.c 기본값(channel=1 -> bit0)을
+ *     잠정 채택했을 뿐, 실제 프로젝트에서 어떤 채널을 쓰는지 확인 필요.
+ *   - canID : IPC 헤더에 들어가는 값으로, RX에는 없던 필드라 실측 기준이 없다.
+ *     기존 SocketCAN 시절 CAN_ID_EGO_STATUS(0x0100)를 참고용으로만 남겨뒀던 것과 같은 맥락. */
+#define CAN_TX_CHANNEL_BITMASK      0x01u   /* TODO(확인 필요) */
+#define CAN_TX_ONLY_CHANNEL_BITMASK 0x00u   /* TODO(확인 필요) */
+#define CAN_TX_ID                   0x0000u /* TODO(확인 필요) */
+
+#define CANDIDATE_INTRO_MSG_ID          0x4u
+#define CANDIDATE_INTRO_SHIFT_TYPE_MASK 40
+#define CANDIDATE_INTRO_SHIFT_CZ_X      30
+#define CANDIDATE_INTRO_SHIFT_CZ_Y      19
+#define CANDIDATE_INTRO_MASK_TYPE_MASK  0xFFu
+#define CANDIDATE_INTRO_MASK_CZ_X       0x3FFu  /* 10bit */
+#define CANDIDATE_INTRO_MASK_CZ_Y       0x7FFu   /* 11bit */
+
+#define CANDIDATE_STATUS_MSG_ID          0x5u
+#define CANDIDATE_STATUS_SHIFT_TYPE_MASK 40
+#define CANDIDATE_STATUS_MASK_TYPE_MASK  0xFFu
+#define CANDIDATE_STATUS_TYPE_NONE       0x00u  /* 후보 차량 없음 */
+#define CANDIDATE_STATUS_TYPE_COMM_ERROR 0x80u  /* 통신 오류 */
+/* speed/x/y/heading 비트 위치는 EGO 프레임과 동일한 레이아웃을 재사용한다
+ * (EGO_SHIFT_SPEED/EGO_SHIFT_X/EGO_SHIFT_Y/EGO_SHIFT_HEADING, 아래에 이미 정의됨) */
+
+#define TL_STATUS_MSG_ID           0x6u
+#define TL_STATUS_ID_NONE          0x00u  /* traffic light 없음 */
+#define TL_STATUS_ID_COMM_ERROR    0x80u  /* 통신 오류 */
+#define TL_SHIFT_TL_TYPE_MASK      32
+#define TL_SHIFT_COLOR             30
+#define TL_SHIFT_TIME_LEFT         26
+#define TL_SHIFT_CZ_X              16
+#define TL_SHIFT_CZ_Y              5
+#define TL_SHIFT_MANEUVER          3
+#define TL_MASK_TL_TYPE_MASK       0xFFu
+#define TL_MASK_COLOR              0x3u   /* 2bit */
+#define TL_MASK_TIME_LEFT          0xFu   /* 4bit */
+#define TL_MASK_CZ_X                0x3FFu /* 10bit */
+#define TL_MASK_CZ_Y                0x7FFu /* 11bit */
+#define TL_MASK_MANEUVER            0x3u   /* 2bit */
+
 static void emit_ego(CanHandler* handler, const EgoVehicle* ego)
 {
     if (handler && ego && handler->callbacks.on_ego) {
@@ -126,7 +172,7 @@ static bool poll_mock(CanHandler* handler)
 
 static bool open_ipc_device(CanHandler* handler, const char* dev_path)
 {
-    const char* path = dev_path ? dev_path : CAN_HANDLER_DEFAULT_DEV_PATH;
+    const char* path = dev_path ? dev_path : "/dev/tcc_ipc_micom";
     handler->fd = open(path, O_RDWR | O_NONBLOCK);
     if (handler->fd < 0) {
         perror("[CanHandler] IPC device open failed");
@@ -161,7 +207,7 @@ bool can_handler_init(
     if (!open_ipc_device(handler, dev_path)) return false;
 
     handler->initialized = true;
-    printf("[CanHandler] init dev_path=%s rx_real=1\n", dev_path ? dev_path : CAN_HANDLER_DEFAULT_DEV_PATH);
+    printf("[CanHandler] init dev_path=%s rx_real=1\n", dev_path ? dev_path : "/dev/tcc_ipc_micom");
     return true;
 }
 
@@ -222,4 +268,152 @@ bool can_handler_poll(CanHandler* handler, int timeout_ms)
 
     emit_ego(handler, &ego);
     return true;
+}
+
+/* ===================== TX helpers ===================== */
+
+/* message_id(4bit) + timestamp(12bit) + payload48 을 64bit big-endian CAN data(8byte)로 packing */
+static void pack_can_data(uint8_t message_id, uint16_t timestamp, uint64_t payload48, uint8_t out8[8])
+{
+    uint64_t raw = ((uint64_t)(message_id & 0xFu) << 60) |
+                   ((uint64_t)(timestamp & EGO_MASK_TIMESTAMP) << EGO_SHIFT_TIMESTAMP) |
+                   (payload48 & 0xFFFFFFFFFFFFULL);
+
+    for (int i = 7; i >= 0; i--) {
+        out8[i] = (uint8_t)(raw & 0xFFu);
+        raw >>= 8;
+    }
+}
+
+/* CAN data(8byte)를 IPC 프레임으로 조립해 device fd로 전송한다.
+ * mock 모드에서는 실제 write() 없이 로그만 남긴다. */
+static void can_handler_send_frame(CanHandler* handler, uint8_t message_id, uint64_t payload48)
+{
+    if (!handler || !handler->initialized) return;
+
+    uint16_t timestamp = handler->tx_tick++;
+    uint8_t can_data[8];
+    pack_can_data(message_id, timestamp, payload48, can_data);
+
+    if (handler->mock_mode) {
+        printf("[CanHandler][TX-MOCK] msg_id=0x%X data=%02X%02X%02X%02X%02X%02X%02X%02X\n",
+               message_id,
+               can_data[0], can_data[1], can_data[2], can_data[3],
+               can_data[4], can_data[5], can_data[6], can_data[7]);
+        return;
+    }
+
+    if (handler->fd < 0) {
+        fprintf(stderr, "[CanHandler] TX skipped: device not open (msg_id=0x%X)\n", message_id);
+        return;
+    }
+
+    if (ipc_frame_send(handler->fd, CAN_TX_CHANNEL_BITMASK, CAN_TX_ONLY_CHANNEL_BITMASK, CAN_TX_ID,
+                        can_data, sizeof(can_data)) != 0) {
+        fprintf(stderr, "[CanHandler] IPC TX send failed (msg_id=0x%X): %s\n", message_id, strerror(errno));
+    }
+}
+
+/* ===================== 0100(binary) - Candidate Vehicle Intro ===================== */
+void can_handler_send_candidate_vehicle_intro(
+    CanHandler* handler,
+    uint8_t type_mask,
+    uint16_t cz_x,
+    uint16_t cz_y
+)
+{
+    uint64_t payload =
+        ((uint64_t)(type_mask & CANDIDATE_INTRO_MASK_TYPE_MASK) << CANDIDATE_INTRO_SHIFT_TYPE_MASK) |
+        ((uint64_t)(cz_x & CANDIDATE_INTRO_MASK_CZ_X)           << CANDIDATE_INTRO_SHIFT_CZ_X) |
+        ((uint64_t)(cz_y & CANDIDATE_INTRO_MASK_CZ_Y)           << CANDIDATE_INTRO_SHIFT_CZ_Y);
+
+    can_handler_send_frame(handler, CANDIDATE_INTRO_MSG_ID, payload);
+}
+
+/* ===================== 0101(binary) - Candidate Vehicle Status ===================== */
+void can_handler_send_candidate_vehicle_status(
+    CanHandler* handler,
+    uint8_t type_mask,
+    const VehicleInfo* vehicle
+)
+{
+    uint8_t speed = 0;
+    uint16_t x = 0;
+    uint16_t y = 0;
+    uint16_t heading = 0;
+
+    if (vehicle) {
+        speed   = vehicle->speed;
+        x       = vehicle->x;
+        y       = vehicle->y;
+        heading = vehicle->heading;
+    }
+
+    uint64_t payload =
+        ((uint64_t)(type_mask & CANDIDATE_STATUS_MASK_TYPE_MASK) << CANDIDATE_STATUS_SHIFT_TYPE_MASK) |
+        ((uint64_t)(speed & EGO_MASK_SPEED)                      << EGO_SHIFT_SPEED) |
+        ((uint64_t)(x & EGO_MASK_X)                              << EGO_SHIFT_X) |
+        ((uint64_t)(y & EGO_MASK_Y)                              << EGO_SHIFT_Y) |
+        ((uint64_t)(heading & EGO_MASK_HEADING)                  << EGO_SHIFT_HEADING);
+
+    can_handler_send_frame(handler, CANDIDATE_STATUS_MSG_ID, payload);
+}
+
+void can_handler_send_no_candidate_vehicle(CanHandler* handler)
+{
+    can_handler_send_candidate_vehicle_status(handler, CANDIDATE_STATUS_TYPE_NONE, NULL);
+}
+
+void can_handler_send_candidate_vehicle_unavailable(CanHandler* handler)
+{
+    can_handler_send_candidate_vehicle_status(handler, CANDIDATE_STATUS_TYPE_COMM_ERROR, NULL);
+}
+
+/* ===================== 0110(binary) - Traffic Light / Maneuver Status ===================== */
+void can_handler_send_traffic_light(
+    CanHandler* handler,
+    uint8_t tl_id,
+    const TrafficLight* traffic_light,
+    uint16_t cz_x,
+    uint16_t cz_y,
+    uint8_t maneuver
+)
+{
+    uint8_t color = 0;
+    uint8_t time_left = 0;
+
+    if (traffic_light) {
+        color     = traffic_light->color;
+        time_left = traffic_light->time_left;
+    }
+
+    uint64_t payload =
+        ((uint64_t)(tl_id & TL_MASK_TL_TYPE_MASK)   << TL_SHIFT_TL_TYPE_MASK) |
+        ((uint64_t)(color & TL_MASK_COLOR)          << TL_SHIFT_COLOR) |
+        ((uint64_t)(time_left & TL_MASK_TIME_LEFT)  << TL_SHIFT_TIME_LEFT) |
+        ((uint64_t)(cz_x & TL_MASK_CZ_X)            << TL_SHIFT_CZ_X) |
+        ((uint64_t)(cz_y & TL_MASK_CZ_Y)            << TL_SHIFT_CZ_Y) |
+        ((uint64_t)(maneuver & TL_MASK_MANEUVER)    << TL_SHIFT_MANEUVER);
+
+    can_handler_send_frame(handler, TL_STATUS_MSG_ID, payload);
+}
+
+void can_handler_send_no_traffic_light(CanHandler* handler, uint16_t cz_x, uint16_t cz_y, uint8_t maneuver)
+{
+    uint64_t payload =
+        ((uint64_t)(TL_STATUS_ID_NONE)           << TL_SHIFT_TL_TYPE_MASK) |
+        ((uint64_t)(cz_x & TL_MASK_CZ_X)         << TL_SHIFT_CZ_X) |
+        ((uint64_t)(cz_y & TL_MASK_CZ_Y)         << TL_SHIFT_CZ_Y) |
+        ((uint64_t)(maneuver & TL_MASK_MANEUVER) << TL_SHIFT_MANEUVER);
+
+    can_handler_send_frame(handler, TL_STATUS_MSG_ID, payload);
+}
+
+void can_handler_send_traffic_light_unavailable(CanHandler* handler, uint8_t maneuver)
+{
+    uint64_t payload =
+        ((uint64_t)(TL_STATUS_ID_COMM_ERROR)     << TL_SHIFT_TL_TYPE_MASK) |
+        ((uint64_t)(maneuver & TL_MASK_MANEUVER) << TL_SHIFT_MANEUVER);
+
+    can_handler_send_frame(handler, TL_STATUS_MSG_ID, payload);
 }
