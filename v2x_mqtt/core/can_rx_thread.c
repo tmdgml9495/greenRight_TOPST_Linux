@@ -56,9 +56,22 @@ static void on_ego_frame(const EgoVehicle* ego, void* user_data)
     MapContext map_context;
     map_service_query_vehicle_context(&context->map, ego->x, ego->y, &map_context);
 
+    /* [ADD] map 매칭 결과 확인용 */
+    printf("[can_rx_thread] ego x=%u y=%u turn_signal=%u -> map found=%d lanelet=%s direction=%d in_center=%d\n",
+           ego->x, ego->y, ego->turn_signal,
+           map_context.found,
+           map_context.found ? map_context.lanelet_id : "-",
+           map_context.direction,
+           map_context.in_intersection_center);
+
     TurnState current = self_vehicle_manager_get_turn_state(&context->self);
     TurnState next = decide_turn_state(current, ego, &map_context);
     self_vehicle_manager_set_turn_state(&context->self, next);
+
+    /* [ADD] turn_state 전이 확인용 */
+    if (current != next) {
+        printf("[can_rx_thread] turn_state changed: %d -> %d\n", current, next);
+    }
 
     self_vehicle_manager_update_from_can(&context->self, &context->map, ego);
 

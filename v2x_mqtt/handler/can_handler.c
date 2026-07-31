@@ -61,7 +61,7 @@
  *     기존 SocketCAN 시절 CAN_ID_EGO_STATUS(0x0100)를 참고용으로만 남겨뒀던 것과 같은 맥락. */
 #define CAN_TX_CHANNEL_BITMASK      0x01u   /* TODO(확인 필요) */
 #define CAN_TX_ONLY_CHANNEL_BITMASK 0x00u   /* TODO(확인 필요) */
-#define CAN_TX_ID                   0x0000u /* TODO(확인 필요) */
+#define CAN_TX_ID                   0x0100u /* TODO(확인 필요) */
 
 #define CANDIDATE_INTRO_MSG_ID          0x4u
 #define CANDIDATE_INTRO_SHIFT_TYPE_MASK 32
@@ -157,7 +157,7 @@ static bool poll_mock(CanHandler* handler)
      * CAN_RX_MOCK=1은 실제 IPC RX 없이 Linux 쪽 판단 로직만 검증하기 위한 모드.
      * 항상 우회전 시그널을 켠 채로 lanelet 안쪽 좌표를 흘려보낸다.
      */
-    ego.x = (uint16_t)(255 + (handler->mock_tick % 20));
+    ego.x = (uint16_t)(205 + (handler->mock_tick % 20));
     ego.y = (uint16_t)(70 + (handler->mock_tick % 35));
     ego.speed = 30;
     ego.heading = 0;
@@ -255,6 +255,11 @@ bool can_handler_poll(CanHandler* handler, int timeout_ms)
         return false;
     }
 
+     /* [ADD] raw 수신 바이트 확인용 */
+    printf("[CanHandler][RX-RAW] len=%zd data=", n);
+    for (ssize_t i = 0; i < n; i++) printf("%02X", recv_buf[i]);
+    printf("\n");
+
     IpcFrame frame;
     IpcParseResult result = ipc_frame_parse(recv_buf, n, &frame);
     if (result != IPC_PARSE_OK) {
@@ -271,6 +276,10 @@ bool can_handler_poll(CanHandler* handler, int timeout_ms)
                 frame.data_len, frame.data_len > 0 ? frame.data[0] : 0);
         return false; /* message_id nibble이 EGO_FRAME_MSG_ID(0x0)가 아닌 경우 */
     }
+
+     /* [ADD] 디코딩된 ego 값 확인용 */
+    printf("[CanHandler][RX-EGO] x=%u y=%u speed=%u heading=%u turn_signal=%u timestamp=%u\n",
+           ego.x, ego.y, ego.speed, ego.heading, ego.turn_signal, ego.timestamp);
 
     emit_ego(handler, &ego);
     return true;
@@ -314,9 +323,17 @@ static void can_handler_send_frame(CanHandler* handler, uint8_t message_id, uint
         return;
     }
 
+    /* [ADD] real TX 시도 로그 (성공/실패 모두) */
+    printf("[CanHandler][TX] msg_id=0x%X data=%02X%02X%02X%02X%02X%02X%02X%02X\n",
+           message_id,
+           can_data[0], can_data[1], can_data[2], can_data[3],
+           can_data[4], can_data[5], can_data[6], can_data[7]);
+
     if (ipc_frame_send(handler->fd, CAN_TX_CHANNEL_BITMASK, CAN_TX_ONLY_CHANNEL_BITMASK, CAN_TX_ID,
                         can_data, sizeof(can_data)) != 0) {
         fprintf(stderr, "[CanHandler] IPC TX send failed (msg_id=0x%X): %s\n", message_id, strerror(errno));
+    } else {
+        printf("[CanHandler][TX] -> write OK (msg_id=0x%X)\n", message_id);
     }
 }
 

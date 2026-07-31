@@ -315,6 +315,16 @@ static void* can_tx_thread_main(void* arg)
             last_had_candidate = false;
         } else if (has_self) {
             has_candidate = select_candidate_vehicle(context, &self, &selection);
+            
+             /* [ADD] 후보 선정 결과 확인용 */
+            if (has_candidate) {
+              printf("[can_tx_thread] candidate selected: vehicle_id=%u type_mask=%u cz=%s\n",
+                       selection.vehicle.vehicle_id, selection.type_mask, selection.conflict_zone_id);
+            } else {
+              int other_count = other_vehicle_manager_count(&context->others);
+              printf("[can_tx_thread] no candidate (self turn_state active, but no matching other vehicle; others=%d)\n",
+                     other_count);
+            }
 
             if (has_candidate) {
                 other_vehicle_manager_set_candidate(&context->others, &selection.vehicle);
