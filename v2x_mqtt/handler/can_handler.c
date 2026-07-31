@@ -157,7 +157,7 @@ static bool poll_mock(CanHandler* handler)
      * CAN_RX_MOCK=1은 실제 IPC RX 없이 Linux 쪽 판단 로직만 검증하기 위한 모드.
      * 항상 우회전 시그널을 켠 채로 lanelet 안쪽 좌표를 흘려보낸다.
      */
-    ego.x = (uint16_t)(205 + (handler->mock_tick % 20));
+    ego.x = (uint16_t)(255 + (handler->mock_tick % 20));
     ego.y = (uint16_t)(70 + (handler->mock_tick % 35));
     ego.speed = 30;
     ego.heading = 0;
