@@ -1,0 +1,77 @@
+# Telechips D3-G / Yocto SDK cross build
+#
+# Usage:
+#   source /home/pi25/yocto-sdk/toolchain/environment-setup-cortexa72-telechips-linux
+#   make -f Makefile.d3 check-sdk
+#   make -f Makefile.d3 -j"$(nproc)"
+#
+# The SDK environment supplies CC, CFLAGS, LDFLAGS and SDKTARGETSYSROOT.
+# Do not hard-code the cross compiler or sysroot here.
+
+ifndef SDKTARGETSYSROOT
+$(error Telechips Yocto SDK environment is not active. Source environment-setup-cortexa72-telechips-linux first)
+endif
+
+BIN_DIR   := bin
+BUILD_DIR := build/d3
+TARGET    := $(BIN_DIR)/v2x_mqtt_d3
+
+CPPFLAGS += -Icommon -Icore -Ihandler -Imanager -Iservice -Imap
+CFLAGS   += -Wall -Wextra -O2 -std=gnu11 -pthread
+LDLIBS   += -lmosquitto -lcjson -pthread -lm
+
+SRCS := \
+    core/main.c \
+    core/can_rx_thread.c \
+    core/mqtt_thread.c \
+    core/can_tx_thread.c \
+    handler/can_handler.c \
+    handler/mqtt_handler.c \
+    service/map_service.c \
+    manager/self_vehicle_manager.c \
+    manager/other_vehicle_manager.c \
+    manager/traffic_light_manager.c \
+    common/vehicle_codec.c \
+    map/IntersectionMap.c
+
+OBJS := $(SRCS:%.c=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:.o=.d)
+
+.PHONY: all clean check-sdk toolchain-info
+
+all: check-sdk $(TARGET)
+
+check-sdk:
+	@test -n "$(CC)" || { echo "ERROR: CC is not set."; exit 1; }
+	@test -n "$(SDKTARGETSYSROOT)" || { echo "ERROR: SDKTARGETSYSROOT is not set."; exit 1; }
+	@test -f "$(SDKTARGETSYSROOT)/usr/include/mosquitto.h" || { \
+		echo "ERROR: mosquitto.h is missing from the target sysroot."; \
+		echo "Add the target mosquitto development package to the Yocto SDK and regenerate it."; \
+		exit 1; \
+	}
+	@test -f "$(SDKTARGETSYSROOT)/usr/include/cjson/cJSON.h" || { \
+		echo "ERROR: cjson/cJSON.h is missing from the target sysroot."; \
+		echo "Add the target cJSON development package to the Yocto SDK and regenerate it."; \
+		exit 1; \
+	}
+
+toolchain-info:
+	@echo "CC=$(CC)"
+	@echo "SDKTARGETSYSROOT=$(SDKTARGETSYSROOT)"
+	@echo "CFLAGS=$(CFLAGS)"
+	@echo "LDFLAGS=$(LDFLAGS)"
+
+$(TARGET): $(OBJS) | $(BIN_DIR)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
+
+$(BUILD_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
+
+$(BIN_DIR):
+	mkdir -p $@
+
+clean:
+	rm -rf $(BUILD_DIR) $(TARGET)
+
+-include $(DEPS)

@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map id="intersection_lanelet_v1"
+     width="300"
+     height="400"
+     unit="cm"
+     origin="bottom_left"
+     coordinate_system="local_2d">
+
+  <metadata>
+    <description>Lanelet-only first version of the demo intersection map.</description>
+    <note>Blue sketch boundary is represented by map width/height. Lane width is fixed to 45 cm.</note>
+    <heading_constants convention="north_zero_clockwise_deg">
+      <heading id="north" deg="0" />
+      <heading id="east" deg="90" />
+      <heading id="south" deg="180" />
+      <heading id="west" deg="270" />
+    </heading_constants>
+  </metadata>
+
+  <points>
+    <!-- Grid points: x = 0, 60, 105, 150, 195, 240, 300 / y = 0, 110, 155, 200, 245, 290, 400 -->
+    <point id="p_000_000" x="0" y="0" />
+    <point id="p_060_000" x="60" y="0" />
+    <point id="p_105_000" x="105" y="0" />
+    <point id="p_150_000" x="150" y="0" />
+    <point id="p_195_000" x="195" y="0" />
+    <point id="p_240_000" x="240" y="0" />
+    <point id="p_300_000" x="300" y="0" />
+
+    <point id="p_000_110" x="0" y="110" />
+    <point id="p_060_110" x="60" y="110" />
+    <point id="p_105_110" x="105" y="110" />
+    <point id="p_150_110" x="150" y="110" />
+    <point id="p_195_110" x="195" y="110" />
+    <point id="p_240_110" x="240" y="110" />
+    <point id="p_300_110" x="300" y="110" />
+
+    <point id="p_000_155" x="0" y="155" />
+    <point id="p_060_155" x="60" y="155" />
+    <point id="p_105_155" x="105" y="155" />
+    <point id="p_195_155" x="195" y="155" />
+    <point id="p_240_155" x="240" y="155" />
+    <point id="p_300_155" x="300" y="155" />
+
+    <point id="p_000_200" x="0" y="200" />
+    <point id="p_060_200" x="60" y="200" />
+    <point id="p_240_200" x="240" y="200" />
+    <point id="p_300_200" x="300" y="200" />
+
+    <point id="p_000_245" x="0" y="245" />
+    <point id="p_060_245" x="60" y="245" />
+    <point id="p_105_245" x="105" y="245" />
+    <point id="p_195_245" x="195" y="245" />
+    <point id="p_202_5_245" x="202.5" y="245" />
+    <point id="p_240_245" x="240" y="245" />
+    <point id="p_300_245" x="300" y="245" />
+
+    <point id="p_000_290" x="0" y="290" />
+    <point id="p_060_290" x="60" y="290" />
+    <point id="p_105_290" x="105" y="290" />
+    <point id="p_150_290" x="150" y="290" />
+    <point id="p_195_290" x="195" y="290" />
+    <point id="p_202_5_290" x="202.5" y="290" />
+    <point id="p_240_290" x="240" y="290" />
+    <point id="p_300_290" x="300" y="290" />
+
+    <point id="p_097_5_110" x="97.5" y="110" />
+    <point id="p_097_5_155" x="97.5" y="155" />
+
+    <point id="p_000_400" x="0" y="400" />
+    <point id="p_060_400" x="60" y="400" />
+    <point id="p_105_400" x="105" y="400" />
+    <point id="p_150_400" x="150" y="400" />
+    <point id="p_195_400" x="195" y="400" />
+    <point id="p_240_400" x="240" y="400" />
+    <point id="p_300_400" x="300" y="400" />
+
+    <!-- Traffic light polygon points. z is height above the road plane, in cm. -->
+    <point id="p_TL1_1" x="170" y="124" z="60" />
+    <point id="p_TL1_2" x="226" y="124" z="60" />
+    <point id="p_TL1_3" x="226" y="142" z="60" />
+    <point id="p_TL1_4" x="170" y="142" z="60" />
+
+    <point id="p_TL2_1" x="214" y="185" z="60" />
+    <point id="p_TL2_2" x="232" y="185" z="60" />
+    <point id="p_TL2_3" x="232" y="248" z="60" />
+    <point id="p_TL2_4" x="214" y="248" z="60" />
+
+    <point id="p_TL3_1" x="70" y="260" z="60" />
+    <point id="p_TL3_2" x="130" y="260" z="60" />
+    <point id="p_TL3_3" x="130" y="278" z="60" />
+    <point id="p_TL3_4" x="70" y="278" z="60" />
+
+    <point id="p_TL4_1" x="70" y="155" z="60" />
+    <point id="p_TL4_2" x="88" y="155" z="60" />
+    <point id="p_TL4_3" x="88" y="218" z="60" />
+    <point id="p_TL4_4" x="70" y="218" z="60" />
+
+    <!-- Conflict zone points. Each conflict zone is 30 x 30 cm. -->
+    <point id="p_cz1_1" x="210" y="155" />
+    <point id="p_cz1_2" x="240" y="155" />
+    <point id="p_cz1_3" x="240" y="185" />
+    <point id="p_cz1_4" x="210" y="185" />
+
+    <point id="p_cz3_1" x="210" y="215" />
+    <point id="p_cz3_2" x="240" y="215" />
+    <point id="p_cz3_3" x="240" y="245" />
+    <point id="p_cz3_4" x="210" y="245" />
+
+    <point id="p_cz5_1" x="60" y="215" />
+    <point id="p_cz5_2" x="90" y="215" />
+    <point id="p_cz5_3" x="90" y="245" />
+    <point id="p_cz5_4" x="60" y="245" />
+
+    <point id="p_cz7_1" x="60" y="155" />
+    <point id="p_cz7_2" x="90" y="155" />
+    <point id="p_cz7_3" x="90" y="185" />
+    <point id="p_cz7_4" x="60" y="185" />
+  </points>
+
+  <linestrings>
+    <!-- South vertical road visible markings -->
+    <linestring id="ls_s_x060_curb" type="curbstone" subtype="solid" passable="no">
+      <point_ref id="p_060_000" />
+      <point_ref id="p_060_110" />
+    </linestring>
+    <linestring id="ls_s_x105_dashed" type="line_thin" subtype="dashed" passable="yes">
+      <point_ref id="p_105_000" />
+      <point_ref id="p_105_110" />
+    </linestring>
+    <linestring id="ls_s_x150_center" type="centerline" subtype="solid" role="road_centerline" passable="no">
+      <point_ref id="p_150_000" />
+      <point_ref id="p_150_110" />
+    </linestring>
+    <linestring id="ls_s_x195_dashed" type="line_thin" subtype="dashed" passable="yes">
+      <point_ref id="p_195_000" />
+      <point_ref id="p_195_110" />
+    </linestring>
+    <linestring id="ls_s_x240_curb" type="curbstone" subtype="solid" passable="no">
+      <point_ref id="p_240_000" />
+      <point_ref id="p_240_110" />
+    </linestring>
+
+    <!-- North vertical road visible markings -->
+    <linestring id="ls_n_x060_curb" type="curbstone" subtype="solid" passable="no">
+      <point_ref id="p_060_290" />
+      <point_ref id="p_060_400" />
+    </linestring>
+    <linestring id="ls_n_x105_dashed" type="line_thin" subtype="dashed" passable="yes">
+      <point_ref id="p_105_290" />
+      <point_ref id="p_105_400" />
+    </linestring>
+    <linestring id="ls_n_x150_center" type="centerline" subtype="solid" role="road_centerline" passable="no">
+      <point_ref id="p_150_290" />
+      <point_ref id="p_150_400" />
+    </linestring>
+    <linestring id="ls_n_x195_dashed" type="line_thin" subtype="dashed" passable="yes">
+      <point_ref id="p_195_290" />
+      <point_ref id="p_195_400" />
+    </linestring>
+    <linestring id="ls_n_x240_curb" type="curbstone" subtype="solid" passable="no">
+      <point_ref id="p_240_290" />
+      <point_ref id="p_240_400" />
+    </linestring>
+
+    <!-- West horizontal road visible markings -->
+    <linestring id="ls_w_y155_curb" type="curbstone" subtype="solid" passable="no">
+      <point_ref id="p_000_155" />
+      <point_ref id="p_060_155" />
+    </linestring>
+    <linestring id="ls_w_y200_center" type="centerline" subtype="solid" role="road_centerline" passable="no">
+      <point_ref id="p_000_200" />
+      <point_ref id="p_060_200" />
+    </linestring>
+    <linestring id="ls_w_y245_curb" type="curbstone" subtype="solid" passable="no">
+      <point_ref id="p_000_245" />
+      <point_ref id="p_060_245" />
+    </linestring>
+
+    <!-- East horizontal road visible markings -->
+    <linestring id="ls_e_y155_curb" type="curbstone" subtype="solid" passable="no">
+      <point_ref id="p_240_155" />
+      <point_ref id="p_300_155" />
+    </linestring>
+    <linestring id="ls_e_y200_center" type="centerline" subtype="solid" role="road_centerline" passable="no">
+      <point_ref id="p_240_200" />
+      <point_ref id="p_300_200" />
+    </linestring>
+    <linestring id="ls_e_y245_curb" type="curbstone" subtype="solid" passable="no">
+      <point_ref id="p_240_245" />
+      <point_ref id="p_300_245" />
+    </linestring>
+  </linestrings>
+
+  <polygons>
+    <polygon id="TL1" type="traffic_light" subtype="vehicle_signal" mount="overhead_box">
+      <point_ref id="p_TL1_1" />
+      <point_ref id="p_TL1_2" />
+      <point_ref id="p_TL1_3" />
+      <point_ref id="p_TL1_4" />
+    </polygon>
+
+    <polygon id="TL2" type="traffic_light" subtype="vehicle_signal" mount="overhead_box">
+      <point_ref id="p_TL2_1" />
+      <point_ref id="p_TL2_2" />
+      <point_ref id="p_TL2_3" />
+      <point_ref id="p_TL2_4" />
+    </polygon>
+
+    <polygon id="TL3" type="traffic_light" subtype="vehicle_signal" mount="overhead_box">
+      <point_ref id="p_TL3_1" />
+      <point_ref id="p_TL3_2" />
+      <point_ref id="p_TL3_3" />
+      <point_ref id="p_TL3_4" />
+    </polygon>
+
+    <polygon id="TL4" type="traffic_light" subtype="vehicle_signal" mount="overhead_box">
+      <point_ref id="p_TL4_1" />
+      <point_ref id="p_TL4_2" />
+      <point_ref id="p_TL4_3" />
+      <point_ref id="p_TL4_4" />
+    </polygon>
+  </polygons>
+
+  <areas>
+    <area id="A1" type="intersection_center" subtype="central_area">
+      <point_ref id="p_060_110" />
+      <point_ref id="p_240_110" />
+      <point_ref id="p_240_290" />
+      <point_ref id="p_060_290" />
+    </area>
+
+    <area id="cz1" type="conflict_zone">
+      <point_ref id="p_cz1_1" />
+      <point_ref id="p_cz1_2" />
+      <point_ref id="p_cz1_3" />
+      <point_ref id="p_cz1_4" />
+    </area>
+
+    <area id="cz3" type="conflict_zone">
+      <point_ref id="p_cz3_1" />
+      <point_ref id="p_cz3_2" />
+      <point_ref id="p_cz3_3" />
+      <point_ref id="p_cz3_4" />
+    </area>
+
+    <area id="cz5" type="conflict_zone">
+      <point_ref id="p_cz5_1" />
+      <point_ref id="p_cz5_2" />
+      <point_ref id="p_cz5_3" />
+      <point_ref id="p_cz5_4" />
+    </area>
+
+    <area id="cz7" type="conflict_zone">
+      <point_ref id="p_cz7_1" />
+      <point_ref id="p_cz7_2" />
+      <point_ref id="p_cz7_3" />
+      <point_ref id="p_cz7_4" />
+    </area>
+
+  </areas>
+
+  <lanelets>
+    <lanelet id="L1" type="lanelet" subtype="vehicle_lane" maneuver="straight" unprotected_left="false" travel_heading_ref="south" travel_heading_deg="180">
+      <left_bound ref="ls_s_x105_dashed" />
+      <right_bound ref="ls_s_x060_curb" />
+      <area_point_ref id="p_060_000" />
+      <area_point_ref id="p_105_000" />
+      <area_point_ref id="p_105_110" />
+      <area_point_ref id="p_060_110" />
+    </lanelet>
+
+    <lanelet id="L2" type="lanelet" subtype="vehicle_lane" maneuver="straight" unprotected_left="false" travel_heading_ref="south" travel_heading_deg="180">
+      <left_bound ref="ls_s_x150_center" />
+      <right_bound ref="ls_s_x105_dashed" />
+      <area_point_ref id="p_105_000" />
+      <area_point_ref id="p_150_000" />
+      <area_point_ref id="p_150_110" />
+      <area_point_ref id="p_105_110" />
+    </lanelet>
+
+    <lanelet id="L3" type="lanelet" subtype="vehicle_lane" maneuver="straight_left" unprotected_left="true" travel_heading_ref="north" travel_heading_deg="0" traffic_light_ref="TL1" regulatory_ref="reg_TL1_L3_L4">
+      <left_bound ref="ls_s_x150_center" />
+      <right_bound ref="ls_s_x195_dashed" />
+      <area_point_ref id="p_150_000" />
+      <area_point_ref id="p_195_000" />
+      <area_point_ref id="p_195_110" />
+      <area_point_ref id="p_150_110" />
+    </lanelet>
+
+    <lanelet id="L4" type="lanelet" subtype="vehicle_lane" maneuver="straight_right" unprotected_left="false" travel_heading_ref="north" travel_heading_deg="0" traffic_light_ref="TL1" regulatory_ref="reg_TL1_L3_L4">
+      <left_bound ref="ls_s_x195_dashed" />
+      <right_bound ref="ls_s_x240_curb" />
+      <area_point_ref id="p_195_000" />
+      <area_point_ref id="p_240_000" />
+      <area_point_ref id="p_240_110" />
+      <area_point_ref id="p_195_110" />
+    </lanelet>
+
+    <lanelet id="L6" type="lanelet" subtype="vehicle_lane" maneuver="straight" unprotected_left="false" travel_heading_ref="east" travel_heading_deg="90">
+      <left_bound ref="ls_e_y200_center" />
+      <right_bound ref="ls_e_y155_curb" />
+      <area_point_ref id="p_240_155" />
+      <area_point_ref id="p_300_155" />
+      <area_point_ref id="p_300_200" />
+      <area_point_ref id="p_240_200" />
+    </lanelet>
+
+    <lanelet id="L7" type="lanelet" subtype="vehicle_lane" maneuver="straight_right" unprotected_left="false" travel_heading_ref="west" travel_heading_deg="270" traffic_light_ref="TL2" regulatory_ref="reg_TL2_L7">
+      <left_bound ref="ls_e_y200_center" />
+      <right_bound ref="ls_e_y245_curb" />
+      <area_point_ref id="p_240_200" />
+      <area_point_ref id="p_300_200" />
+      <area_point_ref id="p_300_245" />
+      <area_point_ref id="p_240_245" />
+    </lanelet>
+
+    <lanelet id="L9" type="lanelet" subtype="vehicle_lane" maneuver="straight" unprotected_left="false" travel_heading_ref="north" travel_heading_deg="0">
+      <left_bound ref="ls_n_x195_dashed" />
+      <right_bound ref="ls_n_x240_curb" />
+      <area_point_ref id="p_195_290" />
+      <area_point_ref id="p_240_290" />
+      <area_point_ref id="p_240_400" />
+      <area_point_ref id="p_195_400" />
+    </lanelet>
+
+    <lanelet id="L10" type="lanelet" subtype="vehicle_lane" maneuver="straight" unprotected_left="false" travel_heading_ref="north" travel_heading_deg="0">
+      <left_bound ref="ls_n_x150_center" />
+      <right_bound ref="ls_n_x195_dashed" />
+      <area_point_ref id="p_150_290" />
+      <area_point_ref id="p_195_290" />
+      <area_point_ref id="p_195_400" />
+      <area_point_ref id="p_150_400" />
+    </lanelet>
+
+    <lanelet id="L11" type="lanelet" subtype="vehicle_lane" maneuver="straight_left" unprotected_left="false" travel_heading_ref="south" travel_heading_deg="180" traffic_light_ref="TL3" regulatory_ref="reg_TL3_L11_L12">
+      <left_bound ref="ls_n_x150_center" />
+      <right_bound ref="ls_n_x105_dashed" />
+      <area_point_ref id="p_105_290" />
+      <area_point_ref id="p_150_290" />
+      <area_point_ref id="p_150_400" />
+      <area_point_ref id="p_105_400" />
+    </lanelet>
+
+    <lanelet id="L12" type="lanelet" subtype="vehicle_lane" maneuver="straight_right" unprotected_left="false" travel_heading_ref="south" travel_heading_deg="180" traffic_light_ref="TL3" regulatory_ref="reg_TL3_L11_L12">
+      <left_bound ref="ls_n_x105_dashed" />
+      <right_bound ref="ls_n_x060_curb" />
+      <area_point_ref id="p_060_290" />
+      <area_point_ref id="p_105_290" />
+      <area_point_ref id="p_105_400" />
+      <area_point_ref id="p_060_400" />
+    </lanelet>
+
+    <lanelet id="L14" type="lanelet" subtype="vehicle_lane" maneuver="straight" unprotected_left="false" travel_heading_ref="west" travel_heading_deg="270">
+      <left_bound ref="ls_w_y200_center" />
+      <right_bound ref="ls_w_y245_curb" />
+      <area_point_ref id="p_000_200" />
+      <area_point_ref id="p_060_200" />
+      <area_point_ref id="p_060_245" />
+      <area_point_ref id="p_000_245" />
+    </lanelet>
+
+    <lanelet id="L15" type="lanelet" subtype="vehicle_lane" maneuver="straight_right" unprotected_left="false" travel_heading_ref="east" travel_heading_deg="90" traffic_light_ref="TL4" regulatory_ref="reg_TL4_L15">
+      <left_bound ref="ls_w_y200_center" />
+      <right_bound ref="ls_w_y155_curb" />
+      <area_point_ref id="p_000_155" />
+      <area_point_ref id="p_060_155" />
+      <area_point_ref id="p_060_200" />
+      <area_point_ref id="p_000_200" />
+    </lanelet>
+  </lanelets>
+
+  <regulatory_elements>
+    <regulatory_element id="reg_TL1_L3_L4" type="traffic_light" subtype="signal_controlled_lane">
+      <traffic_light_ref id="TL1" />
+      <applies_to lanelet_id="L3" />
+      <applies_to lanelet_id="L4" />
+    </regulatory_element>
+
+    <regulatory_element id="reg_TL2_L7" type="traffic_light" subtype="signal_controlled_lane">
+      <traffic_light_ref id="TL2" />
+      <applies_to lanelet_id="L7" />
+    </regulatory_element>
+
+    <regulatory_element id="reg_TL3_L11_L12" type="traffic_light" subtype="signal_controlled_lane">
+      <traffic_light_ref id="TL3" />
+      <applies_to lanelet_id="L11" />
+      <applies_to lanelet_id="L12" />
+    </regulatory_element>
+
+    <regulatory_element id="reg_TL4_L15" type="traffic_light" subtype="signal_controlled_lane">
+      <traffic_light_ref id="TL4" />
+      <applies_to lanelet_id="L15" />
+    </regulatory_element>
+
+    <regulatory_element id="reg_cz1_L4_L15" type="conflict_zone" subtype="lanelet_conflict">
+      <conflict_zone_ref id="cz1" />
+      <applies_to lanelet_id="L4" />
+      <applies_to lanelet_id="L15" />
+    </regulatory_element>
+
+    <regulatory_element id="reg_cz1_L4_L11" type="conflict_zone" subtype="lanelet_conflict">
+      <conflict_zone_ref id="cz1" />
+      <applies_to lanelet_id="L4" />
+      <applies_to lanelet_id="L11" />
+    </regulatory_element>
+
+    <regulatory_element id="reg_cz3_L7_L4" type="conflict_zone" subtype="lanelet_conflict">
+      <conflict_zone_ref id="cz3" />
+      <applies_to lanelet_id="L7" />
+      <applies_to lanelet_id="L4" />
+    </regulatory_element>
+
+    <regulatory_element id="reg_cz5_L12_L7" type="conflict_zone" subtype="lanelet_conflict">
+      <conflict_zone_ref id="cz5" />
+      <applies_to lanelet_id="L12" />
+      <applies_to lanelet_id="L7" />
+    </regulatory_element>
+
+    <regulatory_element id="reg_cz5_L3_L12" type="conflict_zone" subtype="lanelet_conflict">
+      <conflict_zone_ref id="cz5" />
+      <applies_to lanelet_id="L3" />
+      <applies_to lanelet_id="L12" />
+    </regulatory_element>
+
+    <regulatory_element id="reg_cz7_L15_L12" type="conflict_zone" subtype="lanelet_conflict">
+      <conflict_zone_ref id="cz7" />
+      <applies_to lanelet_id="L15" />
+      <applies_to lanelet_id="L12" />
+    </regulatory_element>
+
+  </regulatory_elements>
+
+</map>
