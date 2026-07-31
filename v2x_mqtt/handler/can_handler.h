@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include "types.h"
 
+#define CAN_HANDLER_DEFAULT_DEV_PATH "/dev/tcc_ipc_micom"
+
 typedef void (*CanEgoCallback)(const EgoVehicle* ego, void* user_data);
 
 typedef struct {

@@ -126,7 +126,7 @@ static bool poll_mock(CanHandler* handler)
 
 static bool open_ipc_device(CanHandler* handler, const char* dev_path)
 {
-    const char* path = dev_path ? dev_path : "/dev/tcc_ipc_micom";
+    const char* path = dev_path ? dev_path : CAN_HANDLER_DEFAULT_DEV_PATH;
     handler->fd = open(path, O_RDWR | O_NONBLOCK);
     if (handler->fd < 0) {
         perror("[CanHandler] IPC device open failed");
@@ -161,7 +161,7 @@ bool can_handler_init(
     if (!open_ipc_device(handler, dev_path)) return false;
 
     handler->initialized = true;
-    printf("[CanHandler] init dev_path=%s rx_real=1\n", dev_path ? dev_path : "/dev/tcc_ipc_micom");
+    printf("[CanHandler] init dev_path=%s rx_real=1\n", dev_path ? dev_path : CAN_HANDLER_DEFAULT_DEV_PATH);
     return true;
 }
 

@@ -17,7 +17,7 @@ typedef struct {
     char mqtt_host[128];
     int mqtt_port;
     uint8_t vehicle_id;
-    const char* can_ifname;
+    const char* can_dev_path;
     bool can_mock;
     bool can_tx_real;
     CanHandler can;

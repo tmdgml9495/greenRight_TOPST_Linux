@@ -45,7 +45,7 @@ static bool app_init(AppContext* app, int argc, char** argv)
     snprintf(app->mqtt_host, sizeof(app->mqtt_host), "%s", mqtt_host);
     app->mqtt_port = mqtt_port;
     app->vehicle_id = vehicle_id;
-    app->can_ifname = "can0";
+    app->can_dev_path = CAN_HANDLER_DEFAULT_DEV_PATH;
     app->can_mock = can_mock;
     app->can_tx_real = can_tx_real;
 
