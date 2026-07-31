@@ -21,9 +21,9 @@
 #define DEFAULT_MAP_PATH "map/intersection_lanelet_v1.xml"
 #define PUBLISH_PERIOD_MS 50
 #define ROUTE_START_X 30
-#define ROUTE_END_X 270
+#define ROUTE_END_X 370
 #define ROUTE_STEP_X 4
-#define ROUTE_Y 177
+#define ROUTE_Y 220
 #define RESET_PAUSE_MS 500
 
 static volatile sig_atomic_t g_running = 1;
