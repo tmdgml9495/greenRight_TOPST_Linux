@@ -18,8 +18,8 @@ typedef struct {
     int mqtt_port;
     uint8_t vehicle_id;
     const char* can_dev_path;
-    bool can_mock;
-    bool can_tx_real;
+    bool can_rx_mock;
+    bool can_tx_mock;
     CanHandler can;
     MqttHandler mqtt;
     MapService map;

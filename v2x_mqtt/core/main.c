@@ -29,10 +29,10 @@ static bool app_init(AppContext* app, int argc, char** argv)
     int mqtt_port = argc > 2 ? atoi(argv[2]) : DEFAULT_MQTT_PORT;
     const char* map_path = argc > 3 ? argv[3] : DEFAULT_MAP_PATH;
     uint8_t vehicle_id = argc > 4 ? (uint8_t)atoi(argv[4]) : DEFAULT_VEHICLE_ID;
-    const char* can_mock_env = getenv("CAN_MOCK");
-    const char* can_tx_real_env = getenv("CAN_TX_REAL");
-    bool can_mock = can_mock_env && strcmp(can_mock_env, "1") == 0;
-    bool can_tx_real = can_tx_real_env && strcmp(can_tx_real_env, "1") == 0;
+    const char* can_rx_mock_env = getenv("CAN_RX_MOCK");
+    const char* can_tx_mock_env = getenv("CAN_TX_MOCK");
+    bool can_rx_mock = can_rx_mock_env && strcmp(can_rx_mock_env, "1") == 0;
+    bool can_tx_mock = can_tx_mock_env && strcmp(can_tx_mock_env, "1") == 0;
 
     memset(app, 0, sizeof(*app));
     atomic_init(&app->running, true);
@@ -46,8 +46,8 @@ static bool app_init(AppContext* app, int argc, char** argv)
     app->mqtt_port = mqtt_port;
     app->vehicle_id = vehicle_id;
     app->can_dev_path = CAN_HANDLER_DEFAULT_DEV_PATH;
-    app->can_mock = can_mock;
-    app->can_tx_real = can_tx_real;
+    app->can_rx_mock = can_rx_mock;
+    app->can_tx_mock = can_tx_mock;
 
     return true;
 }

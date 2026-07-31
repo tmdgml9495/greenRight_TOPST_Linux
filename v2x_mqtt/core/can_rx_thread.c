@@ -85,7 +85,12 @@ static void* can_rx_thread_main(void* arg)
     };
 
     while (atomic_load(&context->running)) {
-        if (!can_handler_init(&context->can, context->can_dev_path, context->can_mock, &callbacks)) {
+        if (!can_handler_init(
+                &context->can,
+                context->can_dev_path,
+                context->can_rx_mock,
+                context->can_tx_mock,
+                &callbacks)) {
             fprintf(stderr, "[can_rx_thread] can handler init failed, retrying in %d ms\n", CAN_RECONNECT_DELAY_MS);
             sleep_ms(CAN_RECONNECT_DELAY_MS);
             continue;

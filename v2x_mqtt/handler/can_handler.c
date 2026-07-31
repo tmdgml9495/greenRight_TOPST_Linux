@@ -154,7 +154,7 @@ static bool poll_mock(CanHandler* handler)
     memset(&ego, 0, sizeof(ego));
 
     /*
-     * CAN_MOCK=1은 실제 IPC/RTOS 없이 Linux 쪽 판단 로직만 검증하기 위한 모드.
+     * CAN_RX_MOCK=1은 실제 IPC RX 없이 Linux 쪽 판단 로직만 검증하기 위한 모드.
      * 항상 우회전 시그널을 켠 채로 lanelet 안쪽 좌표를 흘려보낸다.
      */
     ego.x = (uint16_t)(205 + (handler->mock_tick % 20));
@@ -185,7 +185,8 @@ static bool open_ipc_device(CanHandler* handler, const char* dev_path)
 bool can_handler_init(
     CanHandler* handler,
     const char* dev_path,
-    bool mock_mode,
+    bool rx_mock_mode,
+    bool tx_mock_mode,
     const CanHandlerCallbacks* callbacks
 )
 {
@@ -193,21 +194,26 @@ bool can_handler_init(
     memset(handler, 0, sizeof(*handler));
     handler->dev_path = dev_path;
     handler->fd = -1;
-    handler->mock_mode = mock_mode;
+    handler->rx_mock_mode = rx_mock_mode;
+    handler->tx_mock_mode = tx_mock_mode;
     if (callbacks) {
         handler->callbacks = *callbacks;
     }
 
-    if (mock_mode) {
+    if (rx_mock_mode && tx_mock_mode) {
         handler->initialized = true;
-        printf("[CanHandler] init dev_path=%s rx_mock=1\n", dev_path ? dev_path : "none");
+        printf("[CanHandler] init dev_path=%s rx_mock=1 tx_mock=1\n",
+               dev_path ? dev_path : "none");
         return true;
     }
 
     if (!open_ipc_device(handler, dev_path)) return false;
 
     handler->initialized = true;
-    printf("[CanHandler] init dev_path=%s rx_real=1\n", dev_path ? dev_path : "/dev/tcc_ipc_micom");
+    printf("[CanHandler] init dev_path=%s rx_mock=%d tx_mock=%d\n",
+           dev_path ? dev_path : CAN_HANDLER_DEFAULT_DEV_PATH,
+           rx_mock_mode ? 1 : 0,
+           tx_mock_mode ? 1 : 0);
     return true;
 }
 
@@ -224,7 +230,7 @@ void can_handler_cleanup(CanHandler* handler)
 bool can_handler_poll(CanHandler* handler, int timeout_ms)
 {
     if (!handler || !handler->initialized) return false;
-    if (handler->mock_mode) return poll_mock(handler);
+    if (handler->rx_mock_mode) return poll_mock(handler);
 
     fd_set readfds;
     FD_ZERO(&readfds);
@@ -295,7 +301,7 @@ static void can_handler_send_frame(CanHandler* handler, uint8_t message_id, uint
     uint8_t can_data[8];
     pack_can_data(message_id, timestamp, payload48, can_data);
 
-    if (handler->mock_mode) {
+    if (handler->tx_mock_mode) {
         printf("[CanHandler][TX-MOCK] msg_id=0x%X data=%02X%02X%02X%02X%02X%02X%02X%02X\n",
                message_id,
                can_data[0], can_data[1], can_data[2], can_data[3],

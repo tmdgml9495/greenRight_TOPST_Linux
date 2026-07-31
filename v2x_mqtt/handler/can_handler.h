@@ -17,7 +17,8 @@ typedef struct {
 typedef struct {
     const char* dev_path;   /* 예: "/dev/tcc_ipc_micom" (SocketCAN ifname 아님) */
     int fd;
-    bool mock_mode;
+    bool rx_mock_mode;
+    bool tx_mock_mode;
     uint16_t mock_tick;
     uint16_t tx_tick;       /* TX 프레임 timestamp(12bit)용 free-running 카운터 */
     CanHandlerCallbacks callbacks;
@@ -27,7 +28,8 @@ typedef struct {
 bool can_handler_init(
     CanHandler* handler,
     const char* dev_path,
-    bool mock_mode,
+    bool rx_mock_mode,
+    bool tx_mock_mode,
     const CanHandlerCallbacks* callbacks
 );
 void can_handler_cleanup(CanHandler* handler);
