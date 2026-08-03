@@ -255,11 +255,6 @@ bool can_handler_poll(CanHandler* handler, int timeout_ms)
         return false;
     }
 
-     /* [ADD] raw 수신 바이트 확인용 */
-    printf("[CanHandler][RX-RAW] len=%zd data=", n);
-    for (ssize_t i = 0; i < n; i++) printf("%02X", recv_buf[i]);
-    printf("\n");
-
     IpcFrame frame;
     IpcParseResult result = ipc_frame_parse(recv_buf, n, &frame);
     if (result != IPC_PARSE_OK) {
