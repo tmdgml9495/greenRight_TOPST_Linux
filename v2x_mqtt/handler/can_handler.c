@@ -323,17 +323,13 @@ static void can_handler_send_frame(CanHandler* handler, uint8_t message_id, uint
         return;
     }
 
-    /* [ADD] real TX 시도 로그 (성공/실패 모두) */
-    printf("[CanHandler][TX] msg_id=0x%X data=%02X%02X%02X%02X%02X%02X%02X%02X\n",
-           message_id,
-           can_data[0], can_data[1], can_data[2], can_data[3],
-           can_data[4], can_data[5], can_data[6], can_data[7]);
-
     if (ipc_frame_send(handler->fd, CAN_TX_CHANNEL_BITMASK, CAN_TX_ONLY_CHANNEL_BITMASK, CAN_TX_ID,
                         can_data, sizeof(can_data)) != 0) {
         fprintf(stderr, "[CanHandler] IPC TX send failed (msg_id=0x%X): %s\n", message_id, strerror(errno));
-    } else {
-        printf("[CanHandler][TX] -> write OK (msg_id=0x%X)\n", message_id);
+    } else if (message_id == CANDIDATE_INTRO_MSG_ID) {
+        printf("[CanHandler][TX] candidate intro msg_id=0x4 data=%02X%02X%02X%02X%02X%02X%02X%02X\n",
+               can_data[0], can_data[1], can_data[2], can_data[3],
+               can_data[4], can_data[5], can_data[6], can_data[7]);
     }
 }
 
