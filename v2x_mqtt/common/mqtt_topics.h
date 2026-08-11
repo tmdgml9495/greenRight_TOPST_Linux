@@ -25,6 +25,5 @@
 /* vehicle_id constants are defined in types.h. */
 
 /* 차량 상태 publish 주기 (ms) - 발표자료 상 100ms 이내 송수신 기준 */
-#define VEHICLE_PUBLISH_PERIOD_MS   100
 
 #endif /* _MQTT_TOPICS_H_ */

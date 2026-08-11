@@ -115,6 +115,10 @@ bool mqtt_handler_init(
         return false;
     }
 
+    /* CAN RX publishes vehicle state while the Mosquitto network loop runs
+     * in its own thread. */
+    mosquitto_threaded_set(handler->mosq, true);
+
     snprintf(handler->status_topic, sizeof(handler->status_topic), TOPIC_VEHICLE_STATUS_FMT, (unsigned)vehicle_id);
 
     mosquitto_connect_callback_set(handler->mosq, on_connect);

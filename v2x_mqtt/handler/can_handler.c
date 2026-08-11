@@ -1,5 +1,6 @@
 #include "can_handler.h"
 #include "ipc_frame.h"
+#include "ntp_time.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -62,6 +63,10 @@
 #define CAN_TX_CHANNEL_BITMASK      0x01u   /* TODO(확인 필요) */
 #define CAN_TX_ONLY_CHANNEL_BITMASK 0x00u   /* TODO(확인 필요) */
 #define CAN_TX_ID                   0x0100u /* TODO(확인 필요) */
+
+#define NTP_SYNC_MSG_ID                 0x2u
+#define NTP_SYNC_SHIFT_EPOCH_MS         8
+#define NTP_SYNC_MASK_EPOCH_MS          0xFFFFFFFFFFULL
 
 #define CANDIDATE_INTRO_MSG_ID          0x4u
 #define CANDIDATE_INTRO_SHIFT_TYPE_MASK 32
@@ -325,6 +330,42 @@ static void can_handler_send_frame(CanHandler* handler, uint8_t message_id, uint
         printf("[CanHandler][TX] candidate intro msg_id=0x4 data=%02X%02X%02X%02X%02X%02X%02X%02X\n",
                can_data[0], can_data[1], can_data[2], can_data[3],
                can_data[4], can_data[5], can_data[6], can_data[7]);
+    }
+}
+
+/* ===================== 0010(binary) - NTP Time Synchronization ===================== */
+void can_handler_send_ntp_sync(CanHandler* handler)
+{
+    if (!handler || !handler->initialized) return;
+
+    uint64_t sync_epoch_ms = ntp_time_sync_epoch_ms();
+    NtpSyncStatus sync_status = ntp_time_get_sync_status();
+    uint16_t timestamp = (uint16_t)(sync_epoch_ms & EGO_MASK_TIMESTAMP);
+    uint64_t payload =
+        ((sync_epoch_ms & NTP_SYNC_MASK_EPOCH_MS) << NTP_SYNC_SHIFT_EPOCH_MS) |
+        (uint64_t)sync_status;
+    uint8_t can_data[8];
+
+    /* The timestamp is the lower 12 bits of the same epoch carried in the
+     * payload. RTOS uses it for modulo-4096 ms timestamp reconstruction. */
+    pack_can_data(NTP_SYNC_MSG_ID, timestamp, payload, can_data);
+
+    if (handler->tx_mock_mode) {
+        printf("[CanHandler][TX-MOCK][NTP] epoch_ms=%llu status=%u data=%02X%02X%02X%02X%02X%02X%02X%02X\n",
+               (unsigned long long)sync_epoch_ms, (unsigned int)sync_status,
+               can_data[0], can_data[1], can_data[2], can_data[3],
+               can_data[4], can_data[5], can_data[6], can_data[7]);
+        return;
+    }
+
+    if (handler->fd < 0) {
+        fprintf(stderr, "[CanHandler] NTP sync TX skipped: device not open\n");
+        return;
+    }
+
+    if (ipc_frame_send(handler->fd, CAN_TX_CHANNEL_BITMASK, CAN_TX_ONLY_CHANNEL_BITMASK, CAN_TX_ID,
+                       can_data, sizeof(can_data)) != 0) {
+        fprintf(stderr, "[CanHandler] NTP sync IPC TX failed: %s\n", strerror(errno));
     }
 }
 

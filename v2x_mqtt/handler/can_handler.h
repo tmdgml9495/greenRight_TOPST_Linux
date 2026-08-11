@@ -35,6 +35,9 @@ bool can_handler_init(
 void can_handler_cleanup(CanHandler* handler);
 bool can_handler_poll(CanHandler* handler, int timeout_ms);
 
+/* 0010(binary): 40-bit epoch milliseconds and NTP synchronization state. */
+void can_handler_send_ntp_sync(CanHandler* handler);
+
 /* ===================== TX (CA72 -> MICOM, via IPC device) =====================
  * VehicleInfo / TrafficLight 는 types.h(app_context.h 경유)에 정의되어 있다.
  * (VehicleInfo: speed/x/y/heading, TrafficLight: color/time_left 필드명 확인 완료) */

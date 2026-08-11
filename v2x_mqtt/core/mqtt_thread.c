@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <time.h>
 
-#define SELF_PUBLISH_PERIOD_MS 50
 #define MQTT_THREAD_SLEEP_MS 10
 #define OTHER_VEHICLE_TIMEOUT_MS 500
 #define MQTT_RECONNECT_DELAY_MS 1000
@@ -43,7 +42,6 @@ static void* mqtt_thread_main(void* arg)
     };
 
     while (atomic_load(&context->running)) {
-        long publish_elapsed = 0;
         long cleanup_elapsed = 0;
 
         if (!mqtt_handler_init(&context->mqtt, context->mqtt_host, context->mqtt_port, context->vehicle_id, &callbacks)) {
@@ -53,16 +51,7 @@ static void* mqtt_thread_main(void* arg)
         }
 
         while (atomic_load(&context->running) && context->mqtt.initialized) {
-            publish_elapsed += MQTT_THREAD_SLEEP_MS;
             cleanup_elapsed += MQTT_THREAD_SLEEP_MS;
-
-            if (publish_elapsed >= SELF_PUBLISH_PERIOD_MS) {
-                VehicleInfo self;
-                if (self_vehicle_manager_get_info(&context->self, &self)) {
-                    mqtt_handler_publish_vehicle_info(&context->mqtt, &self);
-                }
-                publish_elapsed = 0;
-            }
 
             if (cleanup_elapsed >= OTHER_VEHICLE_TIMEOUT_MS) {
                 other_vehicle_manager_cleanup_stale(&context->others, OTHER_VEHICLE_TIMEOUT_MS);

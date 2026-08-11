@@ -6,9 +6,10 @@
 #include <string.h>
 #include <time.h>
 
-#define CANDIDATE_TX_PERIOD_MS 50
-#define CANDIDATE_STATUS_TX_PERIOD_MS 50
-#define TRAFFIC_LIGHT_TX_PERIOD_MS 300
+#define CANDIDATE_TX_PERIOD_MS 20
+#define CANDIDATE_STATUS_TX_PERIOD_MS 20
+#define TRAFFIC_LIGHT_TX_PERIOD_MS 20
+#define NTP_SYNC_TX_PERIOD_MS 100
 #define CANDIDATE_ID_NONE VEHICLE_ID_NONE
 #define TYPE_MASK_NONE 0
 #define TYPE_MASK_RIGHT_VS_STRAIGHT 1
@@ -257,8 +258,13 @@ static void* can_tx_thread_main(void* arg)
     uint8_t last_intro_vehicle_id = CANDIDATE_ID_NONE;
     uint32_t candidate_status_elapsed_ms = CANDIDATE_STATUS_TX_PERIOD_MS;
     uint32_t traffic_light_elapsed_ms = TRAFFIC_LIGHT_TX_PERIOD_MS;
+    uint32_t ntp_sync_elapsed_ms = NTP_SYNC_TX_PERIOD_MS;
 
     while (atomic_load(&context->running)) {
+        if (ntp_sync_elapsed_ms >= NTP_SYNC_TX_PERIOD_MS) {
+            can_handler_send_ntp_sync(&context->can);
+            ntp_sync_elapsed_ms = 0;
+        }
         bool active = atomic_load(&context->candidate_vehicle_tx_enabled);
         bool status_due =
             candidate_status_elapsed_ms >= CANDIDATE_STATUS_TX_PERIOD_MS;
@@ -273,7 +279,6 @@ static void* can_tx_thread_main(void* arg)
 
         if (!active) {
             if (last_active) {
-                can_handler_send_no_candidate_vehicle(&context->can);
                 other_vehicle_manager_set_candidate(&context->others, NULL);
                 printf("[can_tx_thread] candidate vehicle tx stopped\n");
                 last_active = false;
@@ -282,6 +287,10 @@ static void* can_tx_thread_main(void* arg)
                 candidate_status_elapsed_ms = CANDIDATE_STATUS_TX_PERIOD_MS;
             }
 
+            /* Keep the RTOS state explicit even when no candidate vehicle
+             * transmission is enabled. */
+            can_handler_send_no_candidate_vehicle(&context->can);
+
             if (traffic_light_due) {
                 send_candidate_traffic_light(context, has_self ? &self : NULL, NULL);
                 traffic_light_elapsed_ms = 0;
@@ -289,6 +298,7 @@ static void* can_tx_thread_main(void* arg)
             sleep_ms(CANDIDATE_TX_PERIOD_MS);
             candidate_status_elapsed_ms += CANDIDATE_TX_PERIOD_MS;
             traffic_light_elapsed_ms += CANDIDATE_TX_PERIOD_MS;
+            ntp_sync_elapsed_ms += CANDIDATE_TX_PERIOD_MS;
             continue;
         }
 
@@ -369,6 +379,7 @@ static void* can_tx_thread_main(void* arg)
         sleep_ms(CANDIDATE_TX_PERIOD_MS);
         candidate_status_elapsed_ms += CANDIDATE_TX_PERIOD_MS;
         traffic_light_elapsed_ms += CANDIDATE_TX_PERIOD_MS;
+        ntp_sync_elapsed_ms += CANDIDATE_TX_PERIOD_MS;
     }
     return NULL;
 }
