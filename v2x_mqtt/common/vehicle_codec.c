@@ -225,6 +225,13 @@ cJSON *traffic_light_to_json(const TrafficLight *tl)
     cJSON_AddStringToObject(root, "color", traffic_light_color_to_string(tl->color));
     cJSON_AddNumberToObject(root, "time_left", tl->time_left);
 
+    char timestamp[NTP_TIME_ISO8601_UTC_STRLEN + 1];
+    if (!ntp_time_format_iso8601_utc(tl->timestamp_ms, timestamp)) {
+        cJSON_Delete(root);
+        return NULL;
+    }
+    cJSON_AddStringToObject(root, "timestamp", timestamp);
+
     return root;
 }
 
@@ -248,6 +255,10 @@ bool traffic_light_from_json(const cJSON *root, TrafficLight *out)
 
     if (!get_uint_field(root, "time_left", &val)) return false;
     out->time_left = (uint8_t)val;
+
+    const cJSON *timestamp = cJSON_GetObjectItemCaseSensitive(root, "timestamp");
+    if (!cJSON_IsString(timestamp) || !timestamp->valuestring ||
+        !ntp_time_parse_iso8601_utc(timestamp->valuestring, &out->timestamp_ms)) return false;
 
     return true;
 }

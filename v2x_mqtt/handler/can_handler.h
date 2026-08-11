@@ -46,7 +46,8 @@ void can_handler_send_candidate_vehicle_intro(
     CanHandler* handler,
     uint8_t type_mask,
     uint16_t cz_x,
-    uint16_t cz_y
+    uint16_t cz_y,
+    uint64_t timestamp_epoch_ms
 );
 
 /* 0101(binary) - Candidate Vehicle Status */

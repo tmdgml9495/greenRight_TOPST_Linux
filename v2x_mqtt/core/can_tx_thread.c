@@ -343,7 +343,8 @@ static void* can_tx_thread_main(void* arg)
                         &context->can,
                         selection.type_mask,
                         selection.conflict_zone_center_x,
-                        selection.conflict_zone_center_y
+                        selection.conflict_zone_center_y,
+                        selection.vehicle.timestamp_ms
                     );
                     last_intro_vehicle_id = selection.vehicle.vehicle_id;
                     status_due = true;

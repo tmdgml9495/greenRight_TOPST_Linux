@@ -56,6 +56,7 @@ typedef enum {
 typedef struct {
     uint8_t color;           // TrafficLightColor
     uint8_t time_left;       // 남은 시간
+    uint64_t timestamp_ms;   /* 2026-01-01 UTC reference epoch */
 } TrafficLight;
 
 typedef enum {

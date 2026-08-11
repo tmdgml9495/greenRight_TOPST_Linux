@@ -302,11 +302,16 @@ static void pack_can_data(uint8_t message_id, uint16_t timestamp, uint64_t paylo
 
 /* CAN data(8byte)를 IPC 프레임으로 조립해 device fd로 전송한다.
  * mock 모드에서는 실제 write() 없이 로그만 남긴다. */
-static void can_handler_send_frame(CanHandler* handler, uint8_t message_id, uint64_t payload48)
+static void can_handler_send_frame(
+    CanHandler* handler,
+    uint8_t message_id,
+    uint64_t payload48,
+    uint64_t timestamp_epoch_ms
+)
 {
     if (!handler || !handler->initialized) return;
 
-    uint16_t timestamp = (uint16_t)(ntp_time_sync_epoch_ms() & EGO_MASK_TIMESTAMP);
+    uint16_t timestamp = (uint16_t)(timestamp_epoch_ms & EGO_MASK_TIMESTAMP);
     uint8_t can_data[8];
     pack_can_data(message_id, timestamp, payload48, can_data);
 
@@ -374,7 +379,8 @@ void can_handler_send_candidate_vehicle_intro(
     CanHandler* handler,
     uint8_t type_mask,
     uint16_t cz_x,
-    uint16_t cz_y
+    uint16_t cz_y,
+    uint64_t timestamp_epoch_ms
 )
 {
     uint64_t payload =
@@ -382,7 +388,7 @@ void can_handler_send_candidate_vehicle_intro(
         ((uint64_t)(cz_x & CANDIDATE_INTRO_MASK_CZ_X)           << CANDIDATE_INTRO_SHIFT_CZ_X) |
         ((uint64_t)(cz_y & CANDIDATE_INTRO_MASK_CZ_Y)           << CANDIDATE_INTRO_SHIFT_CZ_Y);
 
-    can_handler_send_frame(handler, CANDIDATE_INTRO_MSG_ID, payload);
+    can_handler_send_frame(handler, CANDIDATE_INTRO_MSG_ID, payload, timestamp_epoch_ms);
 }
 
 /* ===================== 0101(binary) - Candidate Vehicle Status ===================== */
@@ -411,7 +417,8 @@ void can_handler_send_candidate_vehicle_status(
         ((uint64_t)(y & EGO_MASK_Y)                              << EGO_SHIFT_Y) |
         ((uint64_t)(heading & EGO_MASK_HEADING)                  << EGO_SHIFT_HEADING);
 
-    can_handler_send_frame(handler, CANDIDATE_STATUS_MSG_ID, payload);
+    uint64_t timestamp_epoch_ms = vehicle ? vehicle->timestamp_ms : ntp_time_sync_epoch_ms();
+    can_handler_send_frame(handler, CANDIDATE_STATUS_MSG_ID, payload, timestamp_epoch_ms);
 }
 
 void can_handler_send_no_candidate_vehicle(CanHandler* handler)
@@ -450,7 +457,8 @@ void can_handler_send_traffic_light(
         ((uint64_t)(cz_y & TL_MASK_CZ_Y)            << TL_SHIFT_CZ_Y) |
         ((uint64_t)(maneuver & TL_MASK_MANEUVER)    << TL_SHIFT_MANEUVER);
 
-    can_handler_send_frame(handler, TL_STATUS_MSG_ID, payload);
+    uint64_t timestamp_epoch_ms = traffic_light ? traffic_light->timestamp_ms : ntp_time_sync_epoch_ms();
+    can_handler_send_frame(handler, TL_STATUS_MSG_ID, payload, timestamp_epoch_ms);
 }
 
 void can_handler_send_no_traffic_light(CanHandler* handler, uint16_t cz_x, uint16_t cz_y, uint8_t maneuver)
@@ -461,7 +469,7 @@ void can_handler_send_no_traffic_light(CanHandler* handler, uint16_t cz_x, uint1
         ((uint64_t)(cz_y & TL_MASK_CZ_Y)         << TL_SHIFT_CZ_Y) |
         ((uint64_t)(maneuver & TL_MASK_MANEUVER) << TL_SHIFT_MANEUVER);
 
-    can_handler_send_frame(handler, TL_STATUS_MSG_ID, payload);
+    can_handler_send_frame(handler, TL_STATUS_MSG_ID, payload, ntp_time_sync_epoch_ms());
 }
 
 void can_handler_send_traffic_light_unavailable(CanHandler* handler, uint8_t maneuver)
@@ -470,5 +478,5 @@ void can_handler_send_traffic_light_unavailable(CanHandler* handler, uint8_t man
         ((uint64_t)(TL_STATUS_ID_COMM_ERROR)     << TL_SHIFT_TL_TYPE_MASK) |
         ((uint64_t)(maneuver & TL_MASK_MANEUVER) << TL_SHIFT_MANEUVER);
 
-    can_handler_send_frame(handler, TL_STATUS_MSG_ID, payload);
+    can_handler_send_frame(handler, TL_STATUS_MSG_ID, payload, ntp_time_sync_epoch_ms());
 }
