@@ -11,6 +11,7 @@ typedef struct {
     pthread_mutex_t lock;
     EgoVehicle ego;
     VehicleInfo info;
+    uint64_t last_update_monotonic_ms;
     TurnState turn_state;
     uint8_t vehicle_id;
     bool valid;
@@ -21,7 +22,8 @@ void self_vehicle_manager_destroy(SelfVehicleManager* manager);
 void self_vehicle_manager_update_from_can(
     SelfVehicleManager* manager,
     const MapService* map_service,
-    const EgoVehicle* ego
+    const EgoVehicle* ego,
+    uint64_t timestamp_epoch_ms
 );
 bool self_vehicle_manager_get_info(const SelfVehicleManager* manager, VehicleInfo* out);
 bool self_vehicle_manager_get_ego(const SelfVehicleManager* manager, EgoVehicle* out);

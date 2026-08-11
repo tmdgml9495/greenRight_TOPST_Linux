@@ -20,7 +20,6 @@ typedef struct {
     bool rx_mock_mode;
     bool tx_mock_mode;
     uint16_t mock_tick;
-    uint16_t tx_tick;       /* TX 프레임 timestamp(12bit)용 free-running 카운터 */
     CanHandlerCallbacks callbacks;
     bool initialized;
 } CanHandler;

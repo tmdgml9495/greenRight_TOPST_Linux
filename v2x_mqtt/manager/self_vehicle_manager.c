@@ -187,7 +187,8 @@ void self_vehicle_manager_destroy(SelfVehicleManager* manager)
 void self_vehicle_manager_update_from_can(
     SelfVehicleManager* manager,
     const MapService* map_service,
-    const EgoVehicle* ego
+    const EgoVehicle* ego,
+    uint64_t timestamp_epoch_ms
 )
 {
     if (!manager || !map_service || !ego) return;
@@ -202,7 +203,9 @@ void self_vehicle_manager_update_from_can(
     manager->info.y = ego->y;
     manager->info.speed = ego->speed;
     manager->info.heading = ego->heading;
-    manager->info.timestamp_ms = monotonic_ms();
+    /* RTOS sensing time reconstructed from the NTP reference epoch. */
+    manager->info.timestamp_ms = timestamp_epoch_ms;
+    manager->last_update_monotonic_ms = monotonic_ms();
     fill_map_fields(&manager->info, &context);
     safe_copy(manager->info.turn_state, sizeof(manager->info.turn_state), turn_state_to_string(manager->turn_state));
     update_conflict_zones(&manager->info, map_service, &context, manager->turn_state);
@@ -215,7 +218,7 @@ bool self_vehicle_manager_get_info(const SelfVehicleManager* manager, VehicleInf
     if (!manager || !out) return false;
     pthread_mutex_lock((pthread_mutex_t*)&manager->lock);
     bool valid = manager->valid &&
-                 monotonic_ms() - manager->info.timestamp_ms <= SELF_VEHICLE_FRESHNESS_MS;
+                 monotonic_ms() - manager->last_update_monotonic_ms <= SELF_VEHICLE_FRESHNESS_MS;
     if (valid) *out = manager->info;
     pthread_mutex_unlock((pthread_mutex_t*)&manager->lock);
     return valid;

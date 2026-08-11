@@ -1,4 +1,5 @@
 #include "can_rx_thread.h"
+#include "ntp_time.h"
 
 #include <stdatomic.h>
 #include <time.h>
@@ -59,7 +60,16 @@ static void on_ego_frame(const EgoVehicle* ego, void* user_data)
     TurnState next = decide_turn_state(current, ego, &map_context);
     self_vehicle_manager_set_turn_state(&context->self, next);
 
-    self_vehicle_manager_update_from_can(&context->self, &context->map, ego);
+    uint64_t timestamp_epoch_ms = ntp_time_reconstruct(
+        ego->timestamp,
+        ntp_time_sync_epoch_ms()
+    );
+    self_vehicle_manager_update_from_can(
+        &context->self,
+        &context->map,
+        ego,
+        timestamp_epoch_ms
+    );
 
     /* Publish only data that has just arrived from RTOS. This keeps the
      * CAN-to-MQTT path event-driven and avoids retransmitting stale state. */

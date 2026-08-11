@@ -306,7 +306,7 @@ static void can_handler_send_frame(CanHandler* handler, uint8_t message_id, uint
 {
     if (!handler || !handler->initialized) return;
 
-    uint16_t timestamp = handler->tx_tick++;
+    uint16_t timestamp = (uint16_t)(ntp_time_sync_epoch_ms() & EGO_MASK_TIMESTAMP);
     uint8_t can_data[8];
     pack_can_data(message_id, timestamp, payload48, can_data);
 
