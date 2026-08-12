@@ -187,6 +187,77 @@ static bool open_ipc_device(CanHandler* handler, const char* dev_path)
     return true;
 }
 
+static void consume_rx_bytes(CanHandler* handler, size_t count)
+{
+    if (count >= handler->rx_buffer_len) {
+        handler->rx_buffer_len = 0;
+        return;
+    }
+
+    memmove(handler->rx_buffer, handler->rx_buffer + count, handler->rx_buffer_len - count);
+    handler->rx_buffer_len -= count;
+}
+
+static size_t find_ipc_header(const uint8_t* data, size_t length)
+{
+    for (size_t i = 0; i + 2 < length; i++) {
+        if (data[i] == IPC_SYNC && data[i + 1] == IPC_START1 && data[i + 2] == IPC_START2) {
+            return i;
+        }
+    }
+    return length;
+}
+
+static bool process_ipc_rx_buffer(CanHandler* handler)
+{
+    bool processed = false;
+
+    while (handler->rx_buffer_len > 0) {
+        size_t header_offset = find_ipc_header(handler->rx_buffer, handler->rx_buffer_len);
+        if (header_offset == handler->rx_buffer_len) {
+            /* Retain a possible partial FF 55 header for the next read. */
+            if (handler->rx_buffer_len > 2) consume_rx_bytes(handler, handler->rx_buffer_len - 2);
+            break;
+        }
+        if (header_offset > 0) consume_rx_bytes(handler, header_offset);
+        if (handler->rx_buffer_len < IPC_PACKET_PREPARE_SIZE) break;
+
+        uint16_t payload_length = (uint16_t)((handler->rx_buffer[7] << 8) |
+                                             handler->rx_buffer[8]);
+        size_t frame_length = IPC_PACKET_PREPARE_SIZE + (size_t)payload_length + IPC_PACKET_CRC_SIZE;
+        if (payload_length < 8 || frame_length > IPC_MAX_PACKET_SIZE) {
+            fprintf(stderr, "[CanHandler] IPC RX invalid length=%u; resynchronizing\n", payload_length);
+            consume_rx_bytes(handler, 1);
+            continue;
+        }
+        if (handler->rx_buffer_len < frame_length) break;
+
+        IpcFrame frame;
+        IpcParseResult result = ipc_frame_parse(handler->rx_buffer, (ssize_t)frame_length, &frame);
+        if (result != IPC_PARSE_OK) {
+            fprintf(stderr, "[CanHandler] IPC frame drop: %s; resynchronizing\n",
+                    ipc_frame_parse_result_str(result));
+            consume_rx_bytes(handler, 1);
+            continue;
+        }
+
+        EgoVehicle ego;
+        if (!decode_can_payload(frame.data, frame.data_len, &ego)) {
+            fprintf(stderr, "[CanHandler] message_id nibble mismatch or dlc<8 "
+                            "(data_len=%zu, first_byte=0x%02X)\n",
+                    frame.data_len, frame.data_len > 0 ? frame.data[0] : 0);
+        } else {
+            printf("[CanHandler][RX-EGO] x=%u y=%u speed=%u heading=%u turn_signal=%u timestamp=%u\n",
+                   ego.x, ego.y, ego.speed, ego.heading, ego.turn_signal, ego.timestamp);
+            emit_ego(handler, &ego);
+            processed = true;
+        }
+        consume_rx_bytes(handler, frame_length);
+    }
+
+    return processed;
+}
+
 bool can_handler_init(
     CanHandler* handler,
     const char* dev_path,
@@ -260,29 +331,15 @@ bool can_handler_poll(CanHandler* handler, int timeout_ms)
         return false;
     }
 
-    IpcFrame frame;
-    IpcParseResult result = ipc_frame_parse(recv_buf, n, &frame);
-    if (result != IPC_PARSE_OK) {
-        fprintf(stderr, "[CanHandler] IPC frame drop: %s\n", ipc_frame_parse_result_str(result));
-        return false;
+    if ((size_t)n > sizeof(handler->rx_buffer) - handler->rx_buffer_len) {
+        fprintf(stderr, "[CanHandler] IPC RX buffer overflow; discarding buffered data\n");
+        handler->rx_buffer_len = 0;
     }
+    if ((size_t)n > sizeof(handler->rx_buffer)) return false;
 
-    /* RX 프레임에는 canID 헤더가 없다(TX와 달리 channel/tx_only/canID 4byte가
-     * 존재하지 않음). frame.canID는 항상 0이므로 여기서 필터링하면 안 되고,
-     * CAN payload 안의 message_id(상위 4bit)만으로 ego status 프레임인지 판별한다. */
-    EgoVehicle ego;
-    if (!decode_can_payload(frame.data, frame.data_len, &ego)) {
-        fprintf(stderr, "[CanHandler] message_id nibble mismatch or dlc<8 (data_len=%zu, first_byte=0x%02X)\n",
-                frame.data_len, frame.data_len > 0 ? frame.data[0] : 0);
-        return false; /* message_id nibble이 EGO_FRAME_MSG_ID(0x0)가 아닌 경우 */
-    }
-
-     /* [ADD] 디코딩된 ego 값 확인용 */
-    printf("[CanHandler][RX-EGO] x=%u y=%u speed=%u heading=%u turn_signal=%u timestamp=%u\n",
-           ego.x, ego.y, ego.speed, ego.heading, ego.turn_signal, ego.timestamp);
-
-    emit_ego(handler, &ego);
-    return true;
+    memcpy(handler->rx_buffer + handler->rx_buffer_len, recv_buf, (size_t)n);
+    handler->rx_buffer_len += (size_t)n;
+    return process_ipc_rx_buffer(handler);
 }
 
 /* ===================== TX helpers ===================== */

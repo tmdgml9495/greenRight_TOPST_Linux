@@ -2,10 +2,12 @@
 #define TEMP_CAN_HANDLER_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include "types.h"
 
 #define CAN_HANDLER_DEFAULT_DEV_PATH "/dev/tcc_ipc_micom"
+#define CAN_HANDLER_RX_BUFFER_SIZE 4096u
 
 typedef void (*CanEgoCallback)(const EgoVehicle* ego, void* user_data);
 
@@ -20,6 +22,8 @@ typedef struct {
     bool rx_mock_mode;
     bool tx_mock_mode;
     uint16_t mock_tick;
+    uint8_t rx_buffer[CAN_HANDLER_RX_BUFFER_SIZE];
+    size_t rx_buffer_len;
     CanHandlerCallbacks callbacks;
     bool initialized;
 } CanHandler;
