@@ -24,6 +24,11 @@ typedef struct {
     uint16_t mock_tick;
     uint8_t rx_buffer[CAN_HANDLER_RX_BUFFER_SIZE];
     size_t rx_buffer_len;
+    uint64_t ego_rx_count;
+    uint64_t ego_rx_last_ms;
+    uint64_t ego_rx_last_gap_ms;
+    uint64_t ego_rx_max_gap_ms;
+    uint64_t ego_rx_last_log_ms;
     CanHandlerCallbacks callbacks;
     bool initialized;
 } CanHandler;

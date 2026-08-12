@@ -35,6 +35,8 @@
 #define CAN_ID_EGO_STATUS   0x0100u
 
 #define EGO_FRAME_MSG_ID          0x0u
+#define EGO_RX_LOG_PERIOD_MS      1000ULL
+#define EGO_RX_GAP_WARN_MS        300ULL
 
 #define EGO_SHIFT_TIMESTAMP       48
 #define EGO_SHIFT_SPEED           32
@@ -104,6 +106,52 @@ static void emit_ego(CanHandler* handler, const EgoVehicle* ego)
 {
     if (handler && ego && handler->callbacks.on_ego) {
         handler->callbacks.on_ego(ego, handler->callbacks.user_data);
+    }
+}
+
+static uint64_t monotonic_ms(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000ULL);
+}
+
+static void emit_ego_with_diagnostics(CanHandler* handler, const EgoVehicle* ego)
+{
+    uint64_t now_ms = monotonic_ms();
+    uint64_t gap_ms = 0;
+
+    if (handler->ego_rx_last_ms != 0) {
+        gap_ms = now_ms - handler->ego_rx_last_ms;
+        if (gap_ms > handler->ego_rx_max_gap_ms) {
+            handler->ego_rx_max_gap_ms = gap_ms;
+        }
+    }
+
+    handler->ego_rx_count++;
+    handler->ego_rx_last_ms = now_ms;
+    handler->ego_rx_last_gap_ms = gap_ms;
+
+    /* Update freshness and enqueue before any terminal output can block. */
+    emit_ego(handler, ego);
+
+    if (gap_ms > EGO_RX_GAP_WARN_MS) {
+        fprintf(stderr, "[CanHandler][RX-EGO GAP] gap=%llums maxGap=%llums count=%llu\n",
+                (unsigned long long)gap_ms,
+                (unsigned long long)handler->ego_rx_max_gap_ms,
+                (unsigned long long)handler->ego_rx_count);
+    }
+
+    if (handler->ego_rx_last_log_ms == 0 ||
+        now_ms - handler->ego_rx_last_log_ms >= EGO_RX_LOG_PERIOD_MS) {
+        printf("[CanHandler][RX-EGO] count=%llu gap=%llums maxGap=%llums "
+               "x=%u y=%u speed=%u heading=%u turn_signal=%u timestamp=%u\n",
+               (unsigned long long)handler->ego_rx_count,
+               (unsigned long long)gap_ms,
+               (unsigned long long)handler->ego_rx_max_gap_ms,
+               ego->x, ego->y, ego->speed, ego->heading,
+               ego->turn_signal, ego->timestamp);
+        handler->ego_rx_last_log_ms = now_ms;
     }
 }
 
@@ -247,7 +295,7 @@ static bool process_ipc_rx_buffer(CanHandler* handler)
                             "(data_len=%zu, first_byte=0x%02X)\n",
                     frame.data_len, frame.data_len > 0 ? frame.data[0] : 0);
         } else {
-            emit_ego(handler, &ego);
+            emit_ego_with_diagnostics(handler, &ego);
             processed = true;
         }
         consume_rx_bytes(handler, frame_length);
