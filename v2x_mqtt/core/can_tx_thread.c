@@ -6,7 +6,7 @@
 #include <string.h>
 #include <time.h>
 
-#define CANDIDATE_TX_PERIOD_MS 20
+#define CAN_TX_TICK_MS 10
 #define CANDIDATE_STATUS_TX_PERIOD_MS 20
 #define TRAFFIC_LIGHT_TX_PERIOD_MS 20
 #define NTP_SYNC_TX_PERIOD_MS 100
@@ -257,7 +257,8 @@ static void* can_tx_thread_main(void* arg)
     bool last_had_candidate = false;
     uint8_t last_intro_vehicle_id = CANDIDATE_ID_NONE;
     uint32_t candidate_status_elapsed_ms = CANDIDATE_STATUS_TX_PERIOD_MS;
-    uint32_t traffic_light_elapsed_ms = TRAFFIC_LIGHT_TX_PERIOD_MS;
+    /* Send candidate status at t=0, traffic-light status at t=10 ms. */
+    uint32_t traffic_light_elapsed_ms = TRAFFIC_LIGHT_TX_PERIOD_MS / 2;
     uint32_t ntp_sync_elapsed_ms = NTP_SYNC_TX_PERIOD_MS;
 
     while (atomic_load(&context->running)) {
@@ -289,16 +290,19 @@ static void* can_tx_thread_main(void* arg)
 
             /* Keep the RTOS state explicit even when no candidate vehicle
              * transmission is enabled. */
-            can_handler_send_no_candidate_vehicle(&context->can);
+            if (status_due) {
+                can_handler_send_no_candidate_vehicle(&context->can);
+                candidate_status_elapsed_ms = 0;
+            }
 
             if (traffic_light_due) {
                 send_candidate_traffic_light(context, has_self ? &self : NULL, NULL);
                 traffic_light_elapsed_ms = 0;
             }
-            sleep_ms(CANDIDATE_TX_PERIOD_MS);
-            candidate_status_elapsed_ms += CANDIDATE_TX_PERIOD_MS;
-            traffic_light_elapsed_ms += CANDIDATE_TX_PERIOD_MS;
-            ntp_sync_elapsed_ms += CANDIDATE_TX_PERIOD_MS;
+            sleep_ms(CAN_TX_TICK_MS);
+            candidate_status_elapsed_ms += CAN_TX_TICK_MS;
+            traffic_light_elapsed_ms += CAN_TX_TICK_MS;
+            ntp_sync_elapsed_ms += CAN_TX_TICK_MS;
             continue;
         }
 
@@ -308,9 +312,9 @@ static void* can_tx_thread_main(void* arg)
             last_had_candidate = false;
             last_intro_vehicle_id = CANDIDATE_ID_NONE;
             candidate_status_elapsed_ms = CANDIDATE_STATUS_TX_PERIOD_MS;
-            traffic_light_elapsed_ms = TRAFFIC_LIGHT_TX_PERIOD_MS;
+            traffic_light_elapsed_ms = TRAFFIC_LIGHT_TX_PERIOD_MS / 2;
             status_due = true;
-            traffic_light_due = true;
+            traffic_light_due = false;
         }
 
         bool mqtt_connected = mqtt_handler_is_connected(&context->mqtt);
@@ -377,10 +381,10 @@ static void* can_tx_thread_main(void* arg)
             send_candidate_traffic_light(context, has_self ? &self : NULL, has_candidate ? &selection : NULL);
             traffic_light_elapsed_ms = 0;
         }
-        sleep_ms(CANDIDATE_TX_PERIOD_MS);
-        candidate_status_elapsed_ms += CANDIDATE_TX_PERIOD_MS;
-        traffic_light_elapsed_ms += CANDIDATE_TX_PERIOD_MS;
-        ntp_sync_elapsed_ms += CANDIDATE_TX_PERIOD_MS;
+        sleep_ms(CAN_TX_TICK_MS);
+        candidate_status_elapsed_ms += CAN_TX_TICK_MS;
+        traffic_light_elapsed_ms += CAN_TX_TICK_MS;
+        ntp_sync_elapsed_ms += CAN_TX_TICK_MS;
     }
     return NULL;
 }
