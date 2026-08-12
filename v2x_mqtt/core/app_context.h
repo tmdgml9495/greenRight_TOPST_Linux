@@ -10,6 +10,7 @@
 #include "self_vehicle_manager.h"
 #include "other_vehicle_manager.h"
 #include "traffic_light_manager.h"
+#include "vehicle_publish_queue.h"
 
 typedef struct {
     atomic_bool running;
@@ -24,6 +25,7 @@ typedef struct {
     MqttHandler mqtt;
     MapService map;
     SelfVehicleManager self;
+    VehiclePublishQueue self_publish_queue;
     OtherVehicleManager others;
     TrafficLightManager traffic_lights;
 } AppContext;

@@ -31,6 +31,18 @@ static void on_traffic_light_message(uint8_t tl_id, const TrafficLight* traffic_
     traffic_light_manager_update(&context->traffic_lights, tl_id, traffic_light);
 }
 
+static void publish_latest_self_vehicle(AppContext* context)
+{
+    VehicleInfo self;
+
+    if (!context || !mqtt_handler_is_connected(&context->mqtt)) return;
+    if (!vehicle_publish_queue_try_pop(&context->self_publish_queue, &self)) return;
+
+    /* QoS 0 latest-value stream: a failed sample is dropped; the next CAN
+     * update replaces it instead of building an unbounded backlog. */
+    (void)mqtt_handler_publish_vehicle_info(&context->mqtt, &self);
+}
+
 static void* mqtt_thread_main(void* arg)
 {
     AppContext* context = (AppContext*)arg;
@@ -51,6 +63,8 @@ static void* mqtt_thread_main(void* arg)
         }
 
         while (atomic_load(&context->running) && context->mqtt.initialized) {
+            publish_latest_self_vehicle(context);
+
             cleanup_elapsed += MQTT_THREAD_SLEEP_MS;
 
             if (cleanup_elapsed >= OTHER_VEHICLE_TIMEOUT_MS) {

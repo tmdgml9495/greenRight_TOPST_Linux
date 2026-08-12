@@ -19,6 +19,7 @@ SRCS = \
     handler/mqtt_handler.c \
     service/map_service.c \
     manager/self_vehicle_manager.c \
+    manager/vehicle_publish_queue.c \
     manager/other_vehicle_manager.c \
     manager/traffic_light_manager.c \
     common/ntp_time.c \

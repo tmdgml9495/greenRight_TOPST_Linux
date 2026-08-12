@@ -247,8 +247,6 @@ static bool process_ipc_rx_buffer(CanHandler* handler)
                             "(data_len=%zu, first_byte=0x%02X)\n",
                     frame.data_len, frame.data_len > 0 ? frame.data[0] : 0);
         } else {
-            printf("[CanHandler][RX-EGO] x=%u y=%u speed=%u heading=%u turn_signal=%u timestamp=%u\n",
-                   ego.x, ego.y, ego.speed, ego.heading, ego.turn_signal, ego.timestamp);
             emit_ego(handler, &ego);
             processed = true;
         }

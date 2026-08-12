@@ -40,6 +40,7 @@ static bool app_init(AppContext* app, int argc, char** argv)
 
     if (!map_service_init(&app->map, map_path)) return false;
     if (!self_vehicle_manager_init(&app->self, vehicle_id)) return false;
+    if (!vehicle_publish_queue_init(&app->self_publish_queue)) return false;
     if (!other_vehicle_manager_init(&app->others)) return false;
     if (!traffic_light_manager_init(&app->traffic_lights)) return false;
     snprintf(app->mqtt_host, sizeof(app->mqtt_host), "%s", mqtt_host);
@@ -56,6 +57,7 @@ static void app_cleanup(AppContext* app)
 {
     traffic_light_manager_destroy(&app->traffic_lights);
     other_vehicle_manager_destroy(&app->others);
+    vehicle_publish_queue_destroy(&app->self_publish_queue);
     self_vehicle_manager_destroy(&app->self);
 }
 

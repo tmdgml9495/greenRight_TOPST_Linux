@@ -71,11 +71,10 @@ static void on_ego_frame(const EgoVehicle* ego, void* user_data)
         timestamp_epoch_ms
     );
 
-    /* Publish only data that has just arrived from RTOS. This keeps the
-     * CAN-to-MQTT path event-driven and avoids retransmitting stale state. */
+    /* Keep CAN RX non-blocking: hand only the latest state to MQTT thread. */
     VehicleInfo self;
     if (self_vehicle_manager_get_info(&context->self, &self)) {
-        (void)mqtt_handler_publish_vehicle_info(&context->mqtt, &self);
+        vehicle_publish_queue_push(&context->self_publish_queue, &self);
     }
 
     bool was_candidate_mode =
