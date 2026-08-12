@@ -281,17 +281,12 @@ static void* can_tx_thread_main(void* arg)
         if (!active) {
             if (last_active) {
                 other_vehicle_manager_set_candidate(&context->others, NULL);
+                /* Notify RTOS once that the turn/candidate mode ended. */
+                can_handler_send_no_candidate_vehicle(&context->can);
                 printf("[can_tx_thread] candidate vehicle tx stopped\n");
                 last_active = false;
                 last_had_candidate = false;
                 last_intro_vehicle_id = CANDIDATE_ID_NONE;
-                candidate_status_elapsed_ms = CANDIDATE_STATUS_TX_PERIOD_MS;
-            }
-
-            /* Keep the RTOS state explicit even when no candidate vehicle
-             * transmission is enabled. */
-            if (status_due) {
-                can_handler_send_no_candidate_vehicle(&context->can);
                 candidate_status_elapsed_ms = 0;
             }
 
