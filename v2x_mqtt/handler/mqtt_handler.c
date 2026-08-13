@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "mqtt_topics.h"
+#include "temporal_qos.h"
 #include "vehicle_codec.h"
 
 static uint8_t parse_traffic_light_topic_id(const char* topic)
@@ -38,6 +39,13 @@ static void on_message(struct mosquitto* mosq, void* userdata, const struct mosq
     if (strncmp(msg->topic, TOPIC_VEHICLE_STATUS_PREFIX, strlen(TOPIC_VEHICLE_STATUS_PREFIX)) == 0) {
         VehicleInfo vehicle;
         if (vehicle_info_from_json_string(payload, &vehicle) && vehicle.vehicle_id != handler->vehicle_id) {
+#if (TEMPORAL_QOS_TRACE_STAGE_ENABLE == 1U)
+            TemporalQos_TraceStage(
+                4U,
+                (uint16_t)(vehicle.timestamp_ms & TEMPORAL_QOS_TIMESTAMP_MASK)
+            );
+#endif
+
             if (handler->callbacks.on_vehicle) {
                 handler->callbacks.on_vehicle(&vehicle, handler->callbacks.user_data);
             }
@@ -176,6 +184,13 @@ bool mqtt_handler_publish_vehicle_info(MqttHandler* handler, const VehicleInfo* 
 
     char* json = vehicle_info_to_json_string(vehicle);
     if (!json) return false;
+
+#if (TEMPORAL_QOS_TRACE_STAGE_ENABLE == 1U)
+    TemporalQos_TraceStage(
+        3U,
+        (uint16_t)(vehicle->timestamp_ms & TEMPORAL_QOS_TIMESTAMP_MASK)
+    );
+#endif
 
     int rc = mosquitto_publish(
         handler->mosq,
