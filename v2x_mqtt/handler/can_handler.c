@@ -135,6 +135,7 @@ static void emit_ego_with_diagnostics(CanHandler* handler, const EgoVehicle* ego
     /* Update freshness and enqueue before any terminal output can block. */
     emit_ego(handler, ego);
 
+#if (CAN_DEMO_FRAME_LOG_ENABLE == 1U)
     if (gap_ms > EGO_RX_GAP_WARN_MS) {
         fprintf(stderr, "[CanHandler][RX-EGO GAP] gap=%llums maxGap=%llums count=%llu\n",
                 (unsigned long long)gap_ms,
@@ -153,6 +154,7 @@ static void emit_ego_with_diagnostics(CanHandler* handler, const EgoVehicle* ego
                ego->turn_signal, ego->timestamp);
         handler->ego_rx_last_log_ms = now_ms;
     }
+#endif
 }
 
 static bool decode_ego_status(uint16_t timestamp, uint64_t payload48, EgoVehicle* ego)
