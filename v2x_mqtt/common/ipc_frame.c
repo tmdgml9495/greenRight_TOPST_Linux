@@ -1,9 +1,17 @@
 #include "ipc_frame.h"
 
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+
+static uint64_t monotonic_ms(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000ULL + (uint64_t)(ts.tv_nsec / 1000000ULL);
+}
 
 static const uint16_t crc16_table[256] = {
     0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
@@ -165,14 +173,27 @@ int ipc_frame_send(
     }
 
     size_t total_size = (size_t)frame_len;
+    unsigned int retry_count = 0;
+    uint64_t retry_start_ms = 0;
+
     while (1) {
         ssize_t n = write(fd, frame_buf, total_size);
         if (n == (ssize_t)total_size) {
             return 0;
         }
         if (n < 0 && (errno == 62 /* ETIME on some platforms */ || errno == EAGAIN)) {
+            int retry_errno = errno;
+            if (retry_count == 0) {
+                retry_start_ms = monotonic_ms();
+            }
+            retry_count++;
             struct timespec ts = {0, 100 * 1000 * 1000}; /* 100ms */
             nanosleep(&ts, NULL);
+            fprintf(stderr,
+                    "[IPC TX RETRY] errno=%d retry=%u elapsed=%llums canID=0x%03X\n",
+                    retry_errno, retry_count,
+                    (unsigned long long)(monotonic_ms() - retry_start_ms),
+                    canID);
             continue;
         }
         /* 그 외 에러(짧은 write 포함)는 이 단순 char device 프로토콜에서는
