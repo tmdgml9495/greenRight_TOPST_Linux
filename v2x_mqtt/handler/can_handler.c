@@ -64,7 +64,7 @@
  *     기존 SocketCAN 시절 CAN_ID_EGO_STATUS(0x0100)를 참고용으로만 남겨뒀던 것과 같은 맥락. */
 #define CAN_TX_CHANNEL_BITMASK      0x01u   /* TODO(확인 필요) */
 #define CAN_TX_ONLY_CHANNEL_BITMASK 0x00u   /* TODO(확인 필요) */
-#define CAN_TX_ID                   0x0101u /* Linux -> VCP; keep VCP EGO status at 0x100. */
+#define CAN_TX_ID                   0x0100u /* Linux -> VCP; keep VCP EGO status at 0x100. */
 
 #define NTP_SYNC_MSG_ID                 0x2u
 #define NTP_SYNC_SHIFT_EPOCH_MS         8

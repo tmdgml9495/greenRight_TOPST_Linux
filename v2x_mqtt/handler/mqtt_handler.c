@@ -110,7 +110,7 @@ bool mqtt_handler_init(
 
     handler->mosq = mosquitto_new(client_id, true, handler);
     if (!handler->mosq) {
-        fprintf(stderr, "[MQTT] mosquitto_new failed\n");
+        fprintf(stderr, "[MQTT] mosquitto_new failed!\n");
         mosquitto_lib_cleanup();
         return false;
     }
