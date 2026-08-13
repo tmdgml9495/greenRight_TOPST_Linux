@@ -256,7 +256,12 @@ bool traffic_light_from_json(const cJSON *root, TrafficLight *out)
     if (!get_uint_field(root, "time_left", &val)) return false;
     out->time_left = (uint8_t)val;
 
-    const cJSON *timestamp = cJSON_GetObjectItemCaseSensitive(root, "timestamp");
+    const cJSON *timestamp = cJSON_GetObjectItemCaseSensitive(root, "timestamp_ms");
+    /* Accept the previous field name for compatibility with existing senders. */
+    if (!timestamp) {
+        timestamp = cJSON_GetObjectItemCaseSensitive(root, "timestamp");
+    }
+
     if (!cJSON_IsString(timestamp) || !timestamp->valuestring ||
         !ntp_time_parse_iso8601_utc(timestamp->valuestring, &out->timestamp_ms)) return false;
 
