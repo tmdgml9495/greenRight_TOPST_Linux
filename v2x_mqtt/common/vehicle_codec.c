@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
+#include <stdint.h>
+#include <stdio.h>
+
 #include "vehicle_codec.h"
 
 /* ============================ VehicleInfo ============================ */
@@ -13,6 +17,35 @@ static void safe_copy(char* dst, size_t dst_size, const char* src)
         return;
     }
     snprintf(dst, dst_size, "%s", src);
+}
+
+static void format_utc_iso8601_ms(uint64_t timestamp_ms,
+                                    char* out,
+                                    size_t out_size)
+{
+    if (!out || out_size == 0) return;
+
+    time_t sec = (time_t)(timestamp_ms / 1000ULL);
+    uint32_t ms = (uint32_t)(timestamp_ms % 1000ULL);
+
+    struct tm tm_utc;
+
+#if defined(_WIN32)
+    gmtime_s(&tm_utc, &sec);
+#else
+    gmtime_r(&sec, &tm_utc);
+#endif
+
+    snprintf(out,
+             out_size,
+             "%04d-%02d-%02dT%02d:%02d:%02d.%03uZ",
+             tm_utc.tm_year + 1900,
+             tm_utc.tm_mon + 1,
+             tm_utc.tm_mday,
+             tm_utc.tm_hour,
+             tm_utc.tm_min,
+             tm_utc.tm_sec,
+             ms);
 }
 
 static bool get_uint_field(const cJSON *root, const char *key, unsigned long long *out)
