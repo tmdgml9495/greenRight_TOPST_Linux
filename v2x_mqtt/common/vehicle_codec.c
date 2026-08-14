@@ -19,13 +19,18 @@ static void safe_copy(char* dst, size_t dst_size, const char* src)
 }
 
 static void format_utc_iso8601_ms(uint64_t timestamp_ms,
-                                    char* out,
-                                    size_t out_size)
+                                  char* out,
+                                  size_t out_size)
 {
     if (!out || out_size == 0) return;
 
-    time_t sec = (time_t)(timestamp_ms / 1000ULL);
-    uint32_t ms = (uint32_t)(timestamp_ms % 1000ULL);
+    // 2026-01-01T00:00:00Z Unix epoch ms
+    const uint64_t BASE_2026_UTC_MS = 1767225600000ULL;
+
+    uint64_t unix_ms = BASE_2026_UTC_MS + timestamp_ms;
+
+    time_t sec = (time_t)(unix_ms / 1000ULL);
+    uint32_t ms = (uint32_t)(unix_ms % 1000ULL);
 
     struct tm tm_utc;
 
