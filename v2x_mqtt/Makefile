@@ -12,6 +12,7 @@ FAKE_VEHICLE_TARGET = $(BIN_DIR)/fake_vehicle_l15_to_l6
 
 SRCS = \
     core/main.c \
+    core/input_control_thread.c \
     core/can_rx_thread.c \
     core/mqtt_thread.c \
     core/can_tx_thread.c \

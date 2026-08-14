@@ -12,9 +12,13 @@
 #include "traffic_light_manager.h"
 #include "vehicle_publish_queue.h"
 
+#define NTP_SYNC_NORMAL_PERIOD_MS (100U)
+#define NTP_SYNC_TEST_PERIOD_MS   (1000U)
+
 typedef struct {
     atomic_bool running;
     atomic_bool candidate_vehicle_tx_enabled;
+    atomic_uint ntp_sync_tx_period_ms;
     char mqtt_host[128];
     int mqtt_port;
     uint8_t vehicle_id;

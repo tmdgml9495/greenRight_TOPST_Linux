@@ -9,7 +9,6 @@
 #define CAN_TX_TICK_MS 10
 #define CANDIDATE_STATUS_TX_PERIOD_MS 20
 #define TRAFFIC_LIGHT_TX_PERIOD_MS 300
-#define NTP_SYNC_TX_PERIOD_MS 100
 #define CANDIDATE_ID_NONE VEHICLE_ID_NONE
 #define TYPE_MASK_NONE 0
 #define TYPE_MASK_RIGHT_VS_STRAIGHT 1
@@ -259,12 +258,24 @@ static void* can_tx_thread_main(void* arg)
     uint32_t candidate_status_elapsed_ms = CANDIDATE_STATUS_TX_PERIOD_MS;
     /* Send candidate status at t=0, traffic-light status at t=10 ms. */
     uint32_t traffic_light_elapsed_ms = TRAFFIC_LIGHT_TX_PERIOD_MS / 2;
-    uint32_t ntp_sync_elapsed_ms = NTP_SYNC_TX_PERIOD_MS;
+    uint32_t ntp_sync_period_ms = atomic_load(
+        &context->ntp_sync_tx_period_ms
+    );
+    uint32_t ntp_sync_elapsed_ms = ntp_sync_period_ms;
 
     while (atomic_load(&context->running)) {
-        if (ntp_sync_elapsed_ms >= NTP_SYNC_TX_PERIOD_MS) {
+        uint32_t requested_ntp_sync_period_ms = atomic_load(
+            &context->ntp_sync_tx_period_ms
+        );
+
+        if (requested_ntp_sync_period_ms != ntp_sync_period_ms) {
+            ntp_sync_period_ms = requested_ntp_sync_period_ms;
+            ntp_sync_elapsed_ms = 0U;
+        }
+
+        if (ntp_sync_elapsed_ms >= ntp_sync_period_ms) {
             can_handler_send_ntp_sync(&context->can);
-            ntp_sync_elapsed_ms = 0;
+            ntp_sync_elapsed_ms = 0U;
         }
         bool active = atomic_load(&context->candidate_vehicle_tx_enabled);
         bool status_due =

@@ -8,6 +8,7 @@
 #include "app_context.h"
 #include "can_rx_thread.h"
 #include "can_tx_thread.h"
+#include "input_control_thread.h"
 #include "mqtt_thread.h"
 
 #define DEFAULT_MAP_PATH "map/intersection_lanelet_v1.xml"
@@ -37,6 +38,10 @@ static bool app_init(AppContext* app, int argc, char** argv)
     memset(app, 0, sizeof(*app));
     atomic_init(&app->running, true);
     atomic_init(&app->candidate_vehicle_tx_enabled, false);
+    atomic_init(
+        &app->ntp_sync_tx_period_ms,
+        NTP_SYNC_NORMAL_PERIOD_MS
+    );
 
     if (!map_service_init(&app->map, map_path)) return false;
     if (!self_vehicle_manager_init(&app->self, vehicle_id)) return false;
@@ -75,6 +80,8 @@ int main(int argc, char** argv)
     pthread_t can_rx_thread;
     pthread_t can_tx_thread;
     pthread_t mqtt_thread;
+    pthread_t input_control_thread;
+    bool input_control_started = false;
 
     if (can_rx_thread_start(&can_rx_thread, &g_app) != 0) {
         fprintf(stderr, "[main] can rx thread start failed\n");
@@ -91,9 +98,18 @@ int main(int argc, char** argv)
         atomic_store(&g_app.running, false);
     }
 
+    if (input_control_thread_start(&input_control_thread, &g_app) != 0) {
+        fprintf(stderr, "[main] keyboard control thread start failed\n");
+    } else {
+        input_control_started = true;
+    }
+
     pthread_join(can_rx_thread, NULL);
     pthread_join(can_tx_thread, NULL);
     pthread_join(mqtt_thread, NULL);
+    if (input_control_started) {
+        pthread_join(input_control_thread, NULL);
+    }
 
     app_cleanup(&g_app);
     return 0;
