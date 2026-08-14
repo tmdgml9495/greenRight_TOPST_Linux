@@ -284,8 +284,15 @@ bool traffic_light_from_json(const cJSON *root, TrafficLight *out)
     if (!get_uint_field(root, "time_left", &val)) return false;
     out->time_left = (uint8_t)val;
 
-    if (!get_uint_field(root, "timestamp_ms", &val)) return false;
-    out->timestamp_ms = (uint64_t)val;
+    /*
+     * Traffic-light publishers may omit timestamp_ms or provide a
+     * human-readable ISO string. Keep the signal data valid and let the
+     * MQTT receive path supply the local NTP receive time in that case.
+     */
+    out->timestamp_ms = 0U;
+    if (get_uint_field(root, "timestamp_ms", &val)) {
+        out->timestamp_ms = (uint64_t)val;
+    }
 
     return true;
 }

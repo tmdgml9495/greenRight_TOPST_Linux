@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "mqtt_topics.h"
+#include "ntp_time.h"
 #include "temporal_qos.h"
 #include "vehicle_codec.h"
 
@@ -54,6 +55,9 @@ static void on_message(struct mosquitto* mosq, void* userdata, const struct mosq
         uint8_t tl_id = parse_traffic_light_topic_id(msg->topic);
         TrafficLight traffic_light;
         if (tl_id != 0xFF && traffic_light_from_json_string(payload, &traffic_light)) {
+            if (traffic_light.timestamp_ms == 0U) {
+                traffic_light.timestamp_ms = ntp_time_sync_epoch_ms();
+            }
             if (handler->callbacks.on_traffic_light) {
                 handler->callbacks.on_traffic_light(tl_id, &traffic_light, handler->callbacks.user_data);
             }
