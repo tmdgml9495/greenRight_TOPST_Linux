@@ -63,7 +63,10 @@ cJSON *vehicle_info_to_json(const VehicleInfo *v)
     cJSON_AddNumberToObject(root, "conflict_zone_count", cz_count);
     cJSON_AddStringToObject(root, "linked_tl_id", v->linked_tl_id);
     cJSON_AddNumberToObject(root, "timestamp_ms", (double)v->timestamp_ms);
-
+    
+    char utc_buf[32];
+    format_utc_iso8601_ms(v->timestamp_ms, utc_buf, sizeof(utc_buf));
+    cJSON_AddStringToObject(root, "timestamp", utc_buf);
     return root;
 }
 

@@ -7,6 +7,7 @@
 #include "mqtt_topics.h"
 #include "temporal_qos.h"
 #include "vehicle_codec.h"
+#include "ntp_time.h"
 
 static uint8_t parse_traffic_light_topic_id(const char* topic)
 {
@@ -178,17 +179,24 @@ void mqtt_handler_cleanup(MqttHandler* handler)
     handler->initialized = false;
 }
 
-bool mqtt_handler_publish_vehicle_info(MqttHandler* handler, const VehicleInfo* vehicle)
+bool mqtt_handler_publish_vehicle_info(MqttHandler* handler,
+                                       const VehicleInfo* vehicle)
 {
-    if (!handler || !handler->initialized || !handler->mosq || !vehicle) return false;
+    if (!handler || !handler->initialized || !handler->mosq || !vehicle)
+        return false;
 
-    char* json = vehicle_info_to_json_string(vehicle);
+    VehicleInfo publish_vehicle = *vehicle;
+
+    // RTOS timestamp 무시, Linux NTP UTC 시간 사용
+    publish_vehicle.timestamp_ms = ntp_time_now_ms();
+
+    char* json = vehicle_info_to_json_string(&publish_vehicle);
     if (!json) return false;
 
 #if (TEMPORAL_QOS_TRACE_STAGE_ENABLE == 1U)
     TemporalQos_TraceStage(
         3U,
-        (uint16_t)(vehicle->timestamp_ms & TEMPORAL_QOS_TIMESTAMP_MASK)
+        (uint16_t)(publish_vehicle.timestamp_ms & TEMPORAL_QOS_TIMESTAMP_MASK)
     );
 #endif
 
@@ -201,6 +209,7 @@ bool mqtt_handler_publish_vehicle_info(MqttHandler* handler, const VehicleInfo* 
         0,
         true
     );
+
     free(json);
     return rc == MOSQ_ERR_SUCCESS;
 }
