@@ -42,6 +42,7 @@ static bool app_init(AppContext* app, int argc, char** argv)
         &app->ntp_sync_tx_period_ms,
         NTP_SYNC_NORMAL_PERIOD_MS
     );
+    atomic_init(&app->candidate_timestamp_offset_ms, 0U);
 
     if (!map_service_init(&app->map, map_path)) return false;
     if (!self_vehicle_manager_init(&app->self, vehicle_id)) return false;

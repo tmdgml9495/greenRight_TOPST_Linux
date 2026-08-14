@@ -6,6 +6,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "temporal_qos.h"
+
 #define CAN_TX_TICK_MS 10
 #define CANDIDATE_STATUS_TX_PERIOD_MS 20
 #define TRAFFIC_LIGHT_TX_PERIOD_MS 300
@@ -34,6 +36,23 @@ static void sleep_ms(long ms)
     ts.tv_sec = ms / 1000;
     ts.tv_nsec = (ms % 1000) * 1000 * 1000;
     nanosleep(&ts, NULL);
+}
+
+static uint64_t apply_timestamp_offset_ms(
+    uint64_t timestamp_ms,
+    uint32_t offset_ms
+)
+{
+    uint64_t timestamp_upper =
+        timestamp_ms & ~((uint64_t)TEMPORAL_QOS_TIMESTAMP_MASK);
+    uint16_t timestamp12 = (uint16_t)(
+        timestamp_ms & TEMPORAL_QOS_TIMESTAMP_MASK
+    );
+    uint16_t adjusted_timestamp12 = (uint16_t)(
+        (timestamp12 - offset_ms) & TEMPORAL_QOS_TIMESTAMP_MASK
+    );
+
+    return timestamp_upper | adjusted_timestamp12;
 }
 
 static bool vehicle_has_conflict_zone(const VehicleInfo* vehicle, const char* conflict_zone_id)
@@ -360,7 +379,23 @@ static void* can_tx_thread_main(void* arg)
                     status_due = true;
                 }
                 if (status_due) {
-                    can_handler_send_candidate_vehicle_status(&context->can, selection.type_mask, &selection.vehicle);
+                    VehicleInfo vehicle_for_tx = selection.vehicle;
+                    uint32_t timestamp_offset_ms = atomic_load(
+                        &context->candidate_timestamp_offset_ms
+                    );
+
+                    if (timestamp_offset_ms != 0U) {
+                        vehicle_for_tx.timestamp_ms = apply_timestamp_offset_ms(
+                            vehicle_for_tx.timestamp_ms,
+                            timestamp_offset_ms
+                        );
+                    }
+
+                    can_handler_send_candidate_vehicle_status(
+                        &context->can,
+                        selection.type_mask,
+                        &vehicle_for_tx
+                    );
                     candidate_status_elapsed_ms = 0;
                 }
                 last_had_candidate = true;

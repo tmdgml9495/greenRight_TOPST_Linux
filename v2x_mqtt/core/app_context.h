@@ -14,11 +14,13 @@
 
 #define NTP_SYNC_NORMAL_PERIOD_MS (100U)
 #define NTP_SYNC_TEST_PERIOD_MS   (1000U)
+#define CANDIDATE_STALE_TEST_OFFSET_MS (400U)
 
 typedef struct {
     atomic_bool running;
     atomic_bool candidate_vehicle_tx_enabled;
     atomic_uint ntp_sync_tx_period_ms;
+    atomic_uint candidate_timestamp_offset_ms;
     char mqtt_host[128];
     int mqtt_port;
     uint8_t vehicle_id;

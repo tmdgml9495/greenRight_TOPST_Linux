@@ -30,6 +30,34 @@ static void set_ntp_sync_period(
     }
 }
 
+static void set_candidate_timestamp_offset(
+    AppContext* context,
+    uint32_t offset_ms,
+    const char* mode_name
+)
+{
+    uint32_t previous_offset_ms = atomic_exchange(
+        &context->candidate_timestamp_offset_ms,
+        offset_ms
+    );
+
+    if (previous_offset_ms != offset_ms) {
+        if (offset_ms == 0U) {
+            printf(
+                "[Stale Control] %s mode: msgId 0x5 timestamp=original\n",
+                mode_name
+            );
+        } else {
+            printf(
+                "[Stale Control] %s mode: msgId 0x5 timestamp offset=-%u ms\n",
+                mode_name,
+                offset_ms
+            );
+        }
+        fflush(stdout);
+    }
+}
+
 static void* input_control_thread_main(void* arg)
 {
     AppContext* context = (AppContext*)arg;
@@ -58,6 +86,7 @@ static void* input_control_thread_main(void* arg)
 
     printf(
         "[TimeSync Control] keys: t=test(1000 ms), n=normal(100 ms)\n"
+        "[Stale Control] keys: s=stale(-400 ms), f=fresh(original)\n"
     );
     fflush(stdout);
 
@@ -95,6 +124,18 @@ static void* input_control_thread_main(void* arg)
                         context,
                         NTP_SYNC_NORMAL_PERIOD_MS,
                         "NORMAL"
+                    );
+                } else if (key == 's' || key == 'S') {
+                    set_candidate_timestamp_offset(
+                        context,
+                        CANDIDATE_STALE_TEST_OFFSET_MS,
+                        "STALE"
+                    );
+                } else if (key == 'f' || key == 'F') {
+                    set_candidate_timestamp_offset(
+                        context,
+                        0U,
+                        "FRESH"
                     );
                 }
             } else if (read_result < 0 && errno != EINTR) {
