@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include "types.h"
 
-#define CAN_DEMO_FRAME_LOG_ENABLE (0U)
+#define CAN_DEMO_FRAME_LOG_ENABLE (1U)
 
 #define CAN_HANDLER_DEFAULT_DEV_PATH "/dev/tcc_ipc_micom"
 #define CAN_HANDLER_RX_BUFFER_SIZE 4096u
