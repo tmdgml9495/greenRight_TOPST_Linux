@@ -5,8 +5,6 @@
 #include <string.h>
 #include <time.h>
 
-#define SELF_VEHICLE_FRESHNESS_MS 300ULL
-
 static void safe_copy(char* dst, size_t dst_size, const char* src)
 {
     if (!dst || dst_size == 0) return;
@@ -217,8 +215,13 @@ bool self_vehicle_manager_get_info(const SelfVehicleManager* manager, VehicleInf
 {
     if (!manager || !out) return false;
     pthread_mutex_lock((pthread_mutex_t*)&manager->lock);
-    bool valid = manager->valid &&
-                 monotonic_ms() - manager->last_update_monotonic_ms <= SELF_VEHICLE_FRESHNESS_MS;
+    /*
+     * Keep the latest ego state valid after the first CAN update.
+     * The former 300 ms freshness timeout repeatedly emitted
+     * no-candidate/no-traffic-light frames during brief CAN gaps,
+     * which made the RTOS LCD alternate between screens.
+     */
+    bool valid = manager->valid;
     if (valid) *out = manager->info;
     pthread_mutex_unlock((pthread_mutex_t*)&manager->lock);
     return valid;
